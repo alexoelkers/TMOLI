@@ -6,6 +6,9 @@ from urdfenvs.urdf_common.bicycle_model import BicycleModel
 
 
 def run_prius(n_steps=1000, render=False, goal=True, obstacles=True):
+    goal_queue = [(3, 3), (6, 3), (6, 9), (9, 12)]
+    r_goal = 0.1
+
     robots = [
         BicycleModel(
             urdf='prius.urdf',
@@ -24,7 +27,7 @@ def run_prius(n_steps=1000, render=False, goal=True, obstacles=True):
     )
     action = np.array([1, 0])
     pos0 = np.array([0, 0, 0])
-    goal = np.array([0, 0])
+    goal = goal_queue.pop(0)
     ob = env.reset(pos=pos0)
     print(f"Initial observation : {ob}")
     history = []
@@ -33,13 +36,9 @@ def run_prius(n_steps=1000, render=False, goal=True, obstacles=True):
         # current_pos = ob['robot_0']['joint_state']['position']
         action = pointing_controller(ob, goal)
         history.append(ob)
-        if i % 200 == 0:
-            # print(f"time = {i*0.01}")
-            # print(f"position = {history[-1]['robot_0']['joint_state']['position']}")
-            # print(f"{action}\n")
-            pass
-        elif i == 1001:
-            goal = np.array([-100, 0])
+        if goal_euclid_distance(ob, goal) < r_goal:
+            goal = goal_queue.pop(0)
+    env.close()
     return history, env
 
 def pointing_controller(state, goal):
@@ -59,17 +58,12 @@ def pointing_controller(state, goal):
     return np.array([1, -delta_angle])
     
 
+def goal_euclid_distance(state, goal):
+    """a function to check whether the robot has reached its goal"""
+    position = state['robot_0']['joint_state']['position']
+    return np.hypot(position[0] - goal[0], position[1] - goal[1])
+
 
 if __name__ == "__main__":
-    history, env = run_prius(n_steps=1000, render=False)
-    print(f"success")
-    positions = []
-    for step in history:
-        positions.append(step['robot_0']['joint_state']['position'])
-
-    positions = np.array(positions)
-    fig, ax = plt.subplots()
-    ax.plot(positions[:, 0], positions[:, 1])
-    plt.savefig("./examples/car_path")
-    env.close()
+    history, env = run_prius(n_steps=5000, render=True)
 
