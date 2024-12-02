@@ -1,16 +1,18 @@
 from urdfenvs.urdf_common.urdf_env import UrdfEnv
 import numpy as np
 
-def plan(env: UrdfEnv, obs: dict[str, dict]) -> np.array:
+def plan(env: UrdfEnv, observation: dict[str, dict]) -> np.array:
     """
     Performs the planning action
     """
 
-    if type(obs) != dict:
+    obstacles = env.get_obstacles()
+
+    if type(observation) != dict:
         raise TypeError("obs is not a dictionary")
     
-    for robot in obs:
-        x, y, angle = get_state(obs[robot], 'position')
+    for robot in observation:
+        x, y, angle = get_state(observation[robot], 'position')
         print(f"x: {x}, y: {y}, angle: {angle}")
 
     action = np.array([0.6, 0.8])
