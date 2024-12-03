@@ -63,7 +63,8 @@ def controller(state, goal):
     # find the angle to the goal
     position = state['robot_0']['joint_state']['position']
     angle_to_goal = np.arctan2(goal[1] - position[1], goal[0] - position[0])
-    steering_angle = angle_to_goal - position[2]
+    steering_angle = np.arccos(np.cos(angle_to_goal) * np.cos(position[2]) 
+                               + np.sin(angle_to_goal) * np.sin(position[2]))
     return np.array([1, steering_angle])
 
 def create_plots(state_history, input_history, goal_queue):
