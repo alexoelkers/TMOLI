@@ -72,7 +72,6 @@ class Scipy_MPC():
         init_constraint = sco.LinearConstraint(initial_constraint_matrix, x0, x0)
 
         x_k_plus_1 = np.zeros(self._steps*self.NUM_STATES)
-
         state_constraint = sco.NonlinearConstraint(self.discrete_bicycle_constraint, x_k_plus_1, x_k_plus_1)
 
         constraints = [state_constraint, init_constraint]
