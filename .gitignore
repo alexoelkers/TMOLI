@@ -164,3 +164,15 @@ cython_debug/
 # images 
 *.png
 *.jpg
+
+# config 
+*.json
+
+# acados
+*.c
+*.h
+*.o
+*.pxd
+*.make
+Makefile
+t_renderer
