@@ -1,8 +1,5 @@
 # problem parameters
-(nu, nx, N, L, dt) = (1, 2, 20, 0.5, 0.25)
-
-# position reference parameters
-(xref, vref) = (150, 0)
-
-# cost parameters
-(Q, R, V) = 10, 0.01, 0.
+NU  = 1     # nu = number of inputs
+NX  = 2     # nx = number of state variables
+N   = 20    # N = MPC horizon length
+DT  = 0.25  # dt = discrete time step size
