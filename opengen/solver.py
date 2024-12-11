@@ -1,59 +1,50 @@
 import opengen as og
 import casadi.casadi as cs
-import matplotlib.pyplot as plt
 import numpy as np
 
-(nu, nx, N, L, dt) = (1, 2, 20, 0.5, 0.25)
-# xref = np.array([150, 0])
-# (xref, vref) = (150, 0)
-# (Q, R, V) = 1, 0.2, 2
-#Q = np.eye(nx)
-#R = np.eye(nu)
-#V = np.eye(nx)
-# (q, qtheta, r, qN, qthetaN) = (10, 0.1, 1, 200, 2)
+from utils import *
 
-# def quadform(A, x):
-    # """implements x.T @ A @ x"""
-    # return cs.dot(x.T, cs.dot(A, x))
+# cost parameters
+Q = cs.diag(cs.SX([1, 1, 1, 1])) # Q = 10
+R = cs.diag(cs.SX([1e2, 1e1]))
+V = cs.diag(cs.SX([0, 0, 0, 0]))
 
-# A = np.eye(2)
-# b = np.array([1, -1])
-# print(quadform(A, b))
+def calc_cost(state, reference, u_i):
+    """the cost function"""
+    cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
+    return cost
+
 
 def main():
-    (nu, nx, N, L, dt) = (1, 2, 20, 0.5, 0.25)
-    # xref = np.array([150, 0])
-    (xref, vref) = (150, 0)
-    (Q, R, V) = 10, 0.01, 0.
-    #Q = np.eye(nx)
-    #R = np.eye(nu)
-    #V = np.eye(nx)
-    (q, qtheta, r, qN, qthetaN) = (10, 0.1, 1, 200, 2)
-
-    u = cs.SX.sym('u', nu*N)
-    z0 = cs.SX.sym('z0', nx)
-    (x, v) = (z0[0], z0[1])
+    u = cs.SX.sym('u', NU*N)
+    z0 = cs.SX.sym('z0', 2*NX)
+    state, reference = z0[:NX], z0[NX:]
+    # x, y, theta, v = state[0], state[1], state[2], state[3]
+    # xref, yref, thetaref, vref = reference[0], reference[1], reference[2], reference[3]
 
     cost = 0
-    v_hist = []
-    for t in range(0, nu*N, nu):
-        u_t = u[t:t+nu] # this was originally a magic number, so if shit breaks, check here first
-        # cost += quadform(Q, (z0 - xref)) + quadform(R, u_t)
-        cost += Q * (x - xref) ** 2 + Q * (v - vref) ** 2 + R * cs.dot(u_t, u_t)
-        x += v * dt
-        v += u_t[0]
-        v_hist.append(v)
+    v_i = []
 
-    v_hist = cs.vertcat(*v_hist)
-    set_c = og.constraints.BallInf([5]*(nu*N), 5)
-    cost += V * (x - xref) ** 2 + V * (v - vref) ** 2
+    for i in range(0, NU*N, NU):
+        # v_i[i] = v
+        u_i = u[i:i+NU]
+        cost += calc_cost(state, reference, u_i)
+        state[0] += state[3] * cs.cos(state[2]) * DT
+        state[1] += state[3] * cs.sin(state[2]) * DT
+        state[2] += state[3] * cs.sin(u_i[0]) * DT
+        state[3] += u_i[1] * DT
+        v_i.append(state[3])
 
-    umin = [-4.0] * (nu*N)
-    umax = [4.0] * (nu*N)
-    bounds = og.constraints.Rectangle(umin, umax)
+    # v_i[N] = v # terminal velocity
+
+    v_i = cs.vertcat(*v_i)
+    set_c = og.constraints.BallInf([5]*(N), 5)
+    # cost += V * (x - xref) ** 2 + V * (v - vref) ** 2
+
+    bounds = og.constraints.Rectangle(UMIN, UMAX)
 
     problem = og.builder.Problem(u, z0, cost)\
-        .with_aug_lagrangian_constraints(v_hist, set_c)\
+        .with_aug_lagrangian_constraints(v_i, set_c)\
         .with_constraints(bounds)
     build_config = og.config.BuildConfiguration()\
         .with_build_directory("my_optimizers")\

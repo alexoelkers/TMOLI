@@ -2,48 +2,63 @@ import opengen as og
 import casadi.casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
-import time
 
-from opengen_a3 import nu, N, dt
+from utils import *
 
-T = 300
+# position reference parameters
+XREF = 20
+YREF = 20
+THETAREF = 0
+VREF = 0
 
-def car_ode(x, u, dt):
-    return x + np.array([x[1], u]) * dt
+REF = [XREF, YREF, THETAREF, VREF]
 
-# Use TCP server
-# ------------------------------------
-mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation', port=12345)
-mng.start()
+T = 300 # simulation period [n]
 
-mng.ping()
+def car_ode(x, u):
+    x, y, theta, v = x
+    x += v * np.cos(theta) * DT
+    y += v * np.sin(theta) * DT
+    theta += v * np.sin(u[0]) * DT
+    v += u[1] * DT
+    return np.array([x, y, theta, v])
 
-x = np.array([0, 0])
-u_history = []
-x_history = []
 
-start = time.process_time()
-for t in range(T):
-    solution = mng.call(x, initial_guess=[1.0] * (nu*N))
-    # print(f"connection success")
-    if solution.is_ok():
-        u = solution.get().solution[0]
-    else:
-        err = solution.get()
-        raise(ValueError(err.message))
-    x_history.append(x)
-    u_history.append(u)
-    x = car_ode(x, u, dt)
+def main():
+    # Use TCP server
+    # ------------------------------------
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation', port=12345)
+    mng.start()
 
-stop = time.process_time()
-print(stop - start)
-    
+    mng.ping()
 
-mng.kill()
+    x = np.array([0, 0, 0, 5])
+    u_history = []
+    x_history = []
 
-fig, ax = plt.subplots(2)
+    for t in range(T):
+        solution = mng.call([*x, *REF], initial_guess=[1.0] * (NU*N))
+        # print(f"connection success")
+        if solution.is_ok():
+            u = solution.get().solution[:NU]
+        else:
+            err = solution.get()
+            raise(ValueError(err.message))
+        x_history.append(x)
+        u_history.append(u)
+        x = car_ode(x, u)        
 
-ax[0].plot(np.arange(0, T*dt, dt), u_history)
-ax[1].plot(np.arange(0, T*dt, dt), x_history)
+    # close TCP connection
+    mng.kill()
+    x_history = np.array(x_history)
+    u_history = np.array(u_history)
 
-plt.show()
+    fig, ax = plt.subplots(2)
+
+    ax[0].plot(np.arange(0, T*DT, DT), u_history)
+    ax[1].plot(x_history[:,0], x_history[:,1])
+
+    plt.show()
+
+if __name__ == "__main__":
+    main()
