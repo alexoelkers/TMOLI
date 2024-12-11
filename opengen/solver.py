@@ -5,41 +5,43 @@ import numpy as np
 from utils import *
 
 # cost parameters
-Q = 10
-R = 0.01
-V = 0.
+Q = cs.diag(cs.SX([1, 1, 1, 1])) # Q = 10
+R = cs.diag(cs.SX([1e2, 1e1]))
+V = cs.diag(cs.SX([0, 0, 0, 0]))
 
-def cost():
+def calc_cost(state, reference, u_i):
     """the cost function"""
-    pass
+    cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
+    return cost
 
 
 def main():
     u = cs.SX.sym('u', NU*N)
     z0 = cs.SX.sym('z0', 2*NX)
-    x, v, xref, vref = z0[0], z0[1], z0[2], z0[3]
+    state, reference = z0[:NX], z0[NX:]
+    # x, y, theta, v = state[0], state[1], state[2], state[3]
+    # xref, yref, thetaref, vref = reference[0], reference[1], reference[2], reference[3]
 
     cost = 0
     v_i = []
 
     for i in range(0, NU*N, NU):
         # v_i[i] = v
-        u_i = u[i:i+NU] # this was originally a magic number, so if shit breaks, check here first
-        # cost += quadform(Q, (z0 - xref)) + quadform(R, u_t)
-        cost += Q * (x - xref) ** 2 + Q * (v - vref) ** 2 + R * cs.dot(u_i, u_i)
-        x += v * DT
-        v += u_i
-        v_i.append(v)
+        u_i = u[i:i+NU]
+        cost += calc_cost(state, reference, u_i)
+        state[0] += state[3] * cs.cos(state[2]) * DT
+        state[1] += state[3] * cs.sin(state[2]) * DT
+        state[2] += state[3] * cs.sin(u_i[0]) * DT
+        state[3] += u_i[1] * DT
+        v_i.append(state[3])
 
     # v_i[N] = v # terminal velocity
 
     v_i = cs.vertcat(*v_i)
     set_c = og.constraints.BallInf([5]*(N), 5)
-    cost += V * (x - xref) ** 2 + V * (v - vref) ** 2
+    # cost += V * (x - xref) ** 2 + V * (v - vref) ** 2
 
-    umin = [-4.0] * (NU*N)
-    umax = [4.0] * (NU*N)
-    bounds = og.constraints.Rectangle(umin, umax)
+    bounds = og.constraints.Rectangle(UMIN, UMAX)
 
     problem = og.builder.Problem(u, z0, cost)\
         .with_aug_lagrangian_constraints(v_i, set_c)\
