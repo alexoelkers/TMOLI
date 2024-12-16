@@ -11,9 +11,9 @@ YREF = 0
 THETAREF = 0
 VREF = 10
 
-GOAL_QUEUE = [[150, 0, 0, 10], [100, 150, np.pi/2, 10]]
+GOAL_QUEUE = [[20, 10, np.pi/2, 0], [100, 150, np.pi/2, 10]]
 
-T = 300 # simulation period [n]
+T = 120 # simulation period [n]
 
 def car_ode(x, u):
     x, y, theta, v = x
@@ -40,10 +40,7 @@ def main():
     goal = GOAL_QUEUE.pop(0)
 
     for t in np.arange(0, T*DT, DT):
-        if t == 15:
-            goal = GOAL_QUEUE.pop(0)
-            print(f"goal updated")
-        solution = mng.call([*x, *goal], initial_guess=[1.0] * (NU*N))
+        solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU*N))
         # print(f"connection success")
         if solution.is_ok():
             u = solution.get().solution[:NU]
@@ -56,16 +53,20 @@ def main():
 
     # close TCP connection
     mng.kill()
+
     x_history = np.array(x_history)
     u_history = np.array(u_history)
 
-    fig, ax = plt.subplots()
+    fig1, ax1 = plt.subplots()
+    ax1.plot(np.arange(0, T*DT, DT), x_history)
+    ax1.hlines(goal, 0, T*DT)
 
-    # ax[0].plot(np.arange(0, T*DT, DT), u_history)
-    # ax.plot(np.arange(0, T*DT, DT), x_history)
-    ax.plot(x_history[:,0], x_history[:,1])
-    # ax.hlines(goal, 0, T*DT)
-    ax.set(aspect="equal")
+    fig2, ax2 = plt.subplots()
+    ax2.plot(x_history[:,0], x_history[:,1])
+    ax2.set(aspect="equal")
+
+    fig3, ax3 = plt.subplots()
+    ax3.plot(np.arange(0, T*DT, DT), x_history[:, 3] ** 2 / (L / (np.sin(u_history[:, 0]))))
 
     plt.show()
 
