@@ -6,14 +6,14 @@ import numpy as np
 from utils import *
 
 # position reference parameters
-XREF = 20
-YREF = 20
+XREF = 150
+YREF = 0
 THETAREF = 0
 VREF = 0
 
 REF = [XREF, YREF, THETAREF, VREF]
 
-T = 300 # simulation period [n]
+T = 180 # simulation period [n]
 
 def car_ode(x, u):
     x, y, theta, v = x
@@ -32,7 +32,7 @@ def main():
 
     mng.ping()
 
-    x = np.array([0, 0, 0, 5])
+    x = np.array([0, 0, 0, 0])
     u_history = []
     x_history = []
 
@@ -53,10 +53,13 @@ def main():
     x_history = np.array(x_history)
     u_history = np.array(u_history)
 
-    fig, ax = plt.subplots(2)
+    fig, ax = plt.subplots()
 
-    ax[0].plot(np.arange(0, T*DT, DT), u_history)
-    ax[1].plot(x_history[:,0], x_history[:,1])
+    # ax[0].plot(np.arange(0, T*DT, DT), u_history)
+    ax.plot(np.arange(0, T*DT, DT), x_history)
+    # ax.plot(x_history[:,0], x_history[:,1])
+    ax.hlines(REF, 0, T*DT)
+    ax.set(xlim = [0, T*DT])
 
     plt.show()
 

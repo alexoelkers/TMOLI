@@ -5,9 +5,9 @@ import numpy as np
 from utils import *
 
 # cost parameters
-Q = cs.diag(cs.SX([1, 1, 1, 1])) # Q = 10
-R = cs.diag(cs.SX([1e2, 1e1]))
-V = cs.diag(cs.SX([0, 0, 0, 0]))
+Q = cs.diag(cs.SX([10, 10, 0.1, 10])) # Q = 10
+R = cs.diag(cs.SX([1, 10]))
+V = cs.diag(cs.SX([200, 200, 2, 200]))
 
 def calc_cost(state, reference, u_i):
     """the cost function"""
@@ -39,7 +39,7 @@ def main():
 
     v_i = cs.vertcat(*v_i)
     set_c = og.constraints.BallInf([5]*(N), 5)
-    # cost += V * (x - xref) ** 2 + V * (v - vref) ** 2
+    cost += cs.bilin(V, (state - reference))
 
     bounds = og.constraints.Rectangle(UMIN, UMAX)
 
