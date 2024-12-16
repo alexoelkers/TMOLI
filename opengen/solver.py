@@ -5,9 +5,9 @@ import numpy as np
 from utils import *
 
 # cost parameters
-Q = cs.diag(cs.SX([10, 10, 0.1, 10])) # Q = 10
-R = cs.diag(cs.SX([1, 10]))
-V = cs.diag(cs.SX([200, 200, 2, 200]))
+Q = cs.diag(cs.SX([10., 10., 0.1, 10.]))
+R = cs.diag(cs.SX([1., 1.]))
+V = cs.diag(cs.SX([200., 200., 2., 200.]))
 
 def calc_cost(state, reference, u_i):
     """the cost function"""
@@ -24,6 +24,7 @@ def main():
 
     cost = 0
     v_i = []
+    alat_i = []
 
     for i in range(0, NU*N, NU):
         # v_i[i] = v
@@ -32,19 +33,24 @@ def main():
         state[0] += state[3] * cs.cos(state[2]) * DT
         state[1] += state[3] * cs.sin(state[2]) * DT
         state[2] += state[3] * cs.sin(u_i[0]) * DT
+        # state[2] = (state[2] + cs.pi) % (2 * cs.pi) - cs.pi
         state[3] += u_i[1] * DT
         v_i.append(state[3])
+        alat_i.append(state[3] ** 2 / (L / (cs.sin(u_i[0])))) # lateral acceleration
 
-    # v_i[N] = v # terminal velocity
+    cost += cs.bilin(V, (state - reference))
 
     v_i = cs.vertcat(*v_i)
-    set_c = og.constraints.BallInf([5]*(N), 5)
-    cost += cs.bilin(V, (state - reference))
+    alat_i = cs.vertcat(*alat_i)
+
+    set_c = og.constraints.BallInf([5]*N, 5)
+    set_d = og.constraints.BallInf(None, 4)    # latteral acceleration limits
 
     bounds = og.constraints.Rectangle(UMIN, UMAX)
 
-    problem = og.builder.Problem(u, z0, cost)\
-        .with_aug_lagrangian_constraints(v_i, set_c)\
+    problem = og.builder.Problem(u, z0, cost) \
+        .with_aug_lagrangian_constraints(alat_i, set_d) \
+        .with_aug_lagrangian_constraints(v_i, set_c) \
         .with_constraints(bounds)
     build_config = og.config.BuildConfiguration()\
         .with_build_directory("my_optimizers")\
