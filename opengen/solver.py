@@ -32,6 +32,7 @@ def main():
         state[0] += state[3] * cs.cos(state[2]) * DT
         state[1] += state[3] * cs.sin(state[2]) * DT
         state[2] += state[3] * cs.sin(u_i[0]) * DT
+        # state[2] = (state[2] + cs.pi) % (2 * cs.pi) - cs.pi
         state[3] += u_i[1] * DT
         v_i.append(state[3])
 
