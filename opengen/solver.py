@@ -5,8 +5,8 @@ import numpy as np
 from utils import *
 
 # cost parameters
-Q = cs.diag(cs.SX([10., 10., 0.1, 10.]))
-R = cs.diag(cs.SX([1., 1.]))
+Q = cs.diag(cs.SX([10., 10., 10, 100.]))
+R = cs.diag(cs.SX([10., 10.]))
 V = cs.diag(cs.SX([200., 200., 2., 200.]))
 
 def calc_cost(state, reference, u_i):
