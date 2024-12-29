@@ -5,15 +5,17 @@ import numpy as np
 
 from utils import *
 
-# position reference parameters
-XREF = 150
-YREF = 0
-THETAREF = 0
-VREF = 10
+GOAL_QUEUE = [[ 5., 0., 0., 4.], 
+              [10., 0., 0., 4.],
+              [15., 0., 0., 3.],
+              [20., 0., 0., 2.],
+              [23.535, 3.535, np.pi/4, 2.],
+              [25., 5., np.pi/2, 2.],
+              [25, 10., np.pi/2, 3.],
+              [25, 15., np.pi/2, 4.],
+              [25., 150., np.pi/2, 4]]
 
-GOAL_QUEUE = [[20, 10, np.pi/2, 0], [100, 150, np.pi/2, 10]]
-
-T = 120 # simulation period [n]
+T = int(8 / DT) # simulation period [n]
 
 def car_ode(x, u):
     x, y, theta, v = x
@@ -25,6 +27,13 @@ def car_ode(x, u):
     return np.array([x, y, theta, v])
 
 
+def euclidean_dist(s1, s2):
+    """returns the euclidean distance between two states"""
+    x1, y1, *_ = s1
+    x2, y2, *_ = s2
+    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+
+
 def main():
     # Use TCP server
     # ------------------------------------
@@ -33,13 +42,15 @@ def main():
 
     mng.ping()
 
-    x = np.array([0, 0, 0, 0])
+    x = np.array([0, 0, 0, 4])
     u_history = []
     x_history = []
 
     goal = GOAL_QUEUE.pop(0)
 
     for t in np.arange(0, T*DT, DT):
+        if euclidean_dist(x, goal) <= 5. and len(GOAL_QUEUE) != 0:
+            goal = GOAL_QUEUE.pop(0)
         solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU*N))
         # print(f"connection success")
         if solution.is_ok():
