@@ -57,6 +57,8 @@ def main():
     bounds = og.constraints.Rectangle(UMIN, UMAX)
 
     problem = og.builder.Problem(u, z0, cost) \
+        .with_aug_lagrangian_constraints(phi_i, phi_lim) \
+        .with_aug_lagrangian_constraints(acc_i, acc_lim) \
         .with_aug_lagrangian_constraints(alat_i, alat_lim) \
         .with_aug_lagrangian_constraints(v_i, v_lim) \
         .with_constraints(bounds)
