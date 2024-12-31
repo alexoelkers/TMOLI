@@ -5,9 +5,9 @@ import numpy as np
 from utils import *
 
 # cost parameters
-Q = cs.diag(cs.SX([10., 10., 10, 100.]))
+Q = cs.diag(cs.SX([10., 10., 10, 10., 10., 10.]))
 R = cs.diag(cs.SX([10., 10.]))
-V = cs.diag(cs.SX([200., 200., 2., 200.]))
+V = cs.diag(cs.SX([200., 200., 2., 200., 200., 200.]))
 
 def calc_cost(state, reference, u_i):
     """the cost function"""
@@ -19,11 +19,11 @@ def main():
     u = cs.SX.sym('u', NU*N)
     z0 = cs.SX.sym('z0', 2*NX)
     state, reference = z0[:NX], z0[NX:]
-    # x, y, theta, v = state[0], state[1], state[2], state[3]
-    # xref, yref, thetaref, vref = reference[0], reference[1], reference[2], reference[3]
-
+    
     cost = 0
     v_i = []
+    phi_i = []
+    acc_i = []
     alat_i = []
 
     for i in range(0, NU*N, NU):
@@ -32,25 +32,33 @@ def main():
         cost += calc_cost(state, reference, u_i)
         state[0] += state[3] * cs.cos(state[2]) * DT
         state[1] += state[3] * cs.sin(state[2]) * DT
-        state[2] += state[3] * cs.sin(u_i[0]) * DT
-        # state[2] = (state[2] + cs.pi) % (2 * cs.pi) - cs.pi
-        state[3] += u_i[1] * DT
+        state[2] += state[3] * cs.sin(state[4]) * DT
+        state[3] += state[5] * DT
+        state[4] += u_i[0] * DT
+        state[5] += u_i[1] * DT
+
         v_i.append(state[3])
-        alat_i.append(state[3] ** 2 / (L / (cs.sin(u_i[0])))) # lateral acceleration
+        phi_i.append(state[4])
+        acc_i.append(state[5])
+        alat_i.append(state[3] ** 2 / (L / (cs.sin(state[3])))) # lateral acceleration
 
     cost += cs.bilin(V, (state - reference))
 
     v_i = cs.vertcat(*v_i)
+    phi_i = cs.vertcat(*phi_i)
+    acc_i = cs.vertcat(*acc_i)
     alat_i = cs.vertcat(*alat_i)
 
-    set_c = og.constraints.BallInf([5]*N, 5)
-    set_d = og.constraints.BallInf(None, 4)    # latteral acceleration limits
+    v_lim = og.constraints.BallInf([5.]*N, 5.)      # velocity limits
+    phi_lim = og.constraints.BallInf(None, 0.7)    # steering limit 
+    acc_lim = og.constraints.BallInf(None, 4)       # acceleration limit
+    alat_lim = og.constraints.BallInf(None, 4.)     # latteral acceleration limits
 
     bounds = og.constraints.Rectangle(UMIN, UMAX)
 
     problem = og.builder.Problem(u, z0, cost) \
-        .with_aug_lagrangian_constraints(alat_i, set_d) \
-        .with_aug_lagrangian_constraints(v_i, set_c) \
+        .with_aug_lagrangian_constraints(alat_i, alat_lim) \
+        .with_aug_lagrangian_constraints(v_i, v_lim) \
         .with_constraints(bounds)
     build_config = og.config.BuildConfiguration()\
         .with_build_directory("my_optimizers")\
