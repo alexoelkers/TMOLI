@@ -5,9 +5,9 @@ import numpy as np
 from utils import *
 
 # cost parameters
-Q = cs.diag(cs.SX([10., 10., 10, 10., 10., 10.]))
+Q = cs.diag(cs.SX([10., 10., 10, 10., 0., 10.]))
 R = cs.diag(cs.SX([10., 10.]))
-V = cs.diag(cs.SX([200., 200., 2., 200., 200., 200.]))
+V = cs.diag(cs.SX([10., 10., 10., 10., 0., 10.]))
 
 def calc_cost(state, reference, u_i):
     """the cost function"""
@@ -17,7 +17,7 @@ def calc_cost(state, reference, u_i):
 
 def main():
     u = cs.SX.sym('u', NU*N)
-    z0 = cs.SX.sym('z0', 2*NX)
+    z0 = cs.SX.sym('z0', (N+1)*NX)
     state, reference = z0[:NX], z0[NX:]
     
     cost = 0
@@ -26,10 +26,11 @@ def main():
     acc_i = []
     alat_i = []
 
-    for i in range(0, NU*N, NU):
+    for i in range(0, N):
         # v_i[i] = v
-        u_i = u[i:i+NU]
-        cost += calc_cost(state, reference, u_i)
+        u_i = u[i*NU:(i+1)*NU]
+        ref_i = reference[i*NX:(i+1)*NX]
+        cost += calc_cost(state, ref_i, u_i)
         state[0] += state[3] * cs.cos(state[2]) * DT
         state[1] += state[3] * cs.sin(state[2]) * DT
         state[2] += state[3] * cs.sin(state[4]) * DT
