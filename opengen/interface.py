@@ -18,13 +18,15 @@ GOAL_QUEUE = [[ 5., 0., 0., 4.],
 T = int(8 / DT) # simulation period [n]
 
 def car_ode(x, u):
-    x, y, theta, v = x
+    x, y, theta, v, phi, a = x
     x += v * np.cos(theta) * DT
     y += v * np.sin(theta) * DT
-    theta += v * np.sin(u[0]) * DT
+    theta += v * np.sin(phi) * DT
     theta = (theta + np.pi) % (2 * np.pi) - np.pi
-    v += u[1] * DT
-    return np.array([x, y, theta, v])
+    v += a * DT
+    phi += u[0] * DT
+    a += u[1] * DT
+    return np.array([x, y, theta, v, phi, a])
 
 
 def euclidean_dist(s1, s2):
@@ -80,11 +82,11 @@ def main():
 
     fig1, ax1 = plt.subplots()
     ax1.plot(np.arange(0, T*DT, DT), x_history)
-    ax1.hlines(goal, 0, T*DT)
+    # ax1.hlines(goal, 0, T*DT)
 
     fig2, ax2 = plt.subplots()
     ax2.plot(x_history[:,0], x_history[:,1])
-    ax2.set(aspect="equal")
+    # ax2.set(aspect="equal")
 
     fig3, ax3 = plt.subplots()
     ax3.plot(np.arange(0, T*DT, DT), x_history[:, 3] ** 2 / (L / (np.sin(u_history[:, 0]))))

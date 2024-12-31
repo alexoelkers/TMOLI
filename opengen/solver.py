@@ -43,7 +43,7 @@ def main():
         acc_i.append(state[5])
         alat_i.append(state[3] ** 2 / (L / (cs.sin(state[3])))) # lateral acceleration
 
-    cost += cs.bilin(V, (state - reference))
+    # cost += cs.bilin(V, (state - reference[]))
 
     v_i = cs.vertcat(*v_i)
     phi_i = cs.vertcat(*phi_i)
