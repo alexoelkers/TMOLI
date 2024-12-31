@@ -33,6 +33,15 @@ def euclidean_dist(s1, s2):
     x2, y2, *_ = s2
     return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
+def get_goal(state):
+    x, y, theta, v, *_ = state
+    goal = []
+    for i in range(N):
+        x += v * DT
+        goal.extend([x, 0, 0, 4, 0, 0])
+    return goal
+
+
 
 def main():
     # Use TCP server
@@ -42,15 +51,16 @@ def main():
 
     mng.ping()
 
-    x = np.array([0, 0, 0, 4])
+    x = np.array([0, 0, 0, 4, 0, 0])
     u_history = []
     x_history = []
 
     goal = GOAL_QUEUE.pop(0)
 
     for t in np.arange(0, T*DT, DT):
-        if euclidean_dist(x, goal) <= 5. and len(GOAL_QUEUE) != 0:
-            goal = GOAL_QUEUE.pop(0)
+        # if euclidean_dist(x, goal) <= 5. and len(GOAL_QUEUE) != 0:
+        #     goal = GOAL_QUEUE.pop(0)
+        goal = get_goal(x)
         solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU*N))
         # print(f"connection success")
         if solution.is_ok():
