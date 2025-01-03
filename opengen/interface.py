@@ -4,18 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from utils import *
+import splinterp as sp
 
-GOAL_QUEUE = [[ 5., 0., 0., 4.], 
-              [10., 0., 0., 4.],
-              [15., 0., 0., 3.],
-              [20., 0., 0., 2.],
-              [23.535, 3.535, np.pi/4, 2.],
-              [25., 5., np.pi/2, 2.],
-              [25, 10., np.pi/2, 3.],
-              [25, 15., np.pi/2, 4.],
-              [25., 150., np.pi/2, 4]]
 
-SIMTIME = 60
+SIMTIME = 30    # maximum allowable simtime
 T = int(SIMTIME / DT) # simulation period [n]
 
 def car_ode(x, u):
@@ -30,30 +22,6 @@ def car_ode(x, u):
     return np.array([x, y, theta, v, phi, a])
 
 
-def euclidean_dist(s1, s2):
-    """returns the euclidean distance between two states"""
-    x1, y1, *_ = s1
-    x2, y2, *_ = s2
-    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-
-def get_goal(state):
-    x, y, theta, v, *_ = state
-    goal = []
-    for i in range(N):
-        x += v * DT
-        goal.extend([x, 0, 0, 4, 0, 0])
-    return goal
-
-def get_goal_sin(state):
-    x, y, theta, v, *_ = state
-    goal = []
-    for i in range(N):
-        x += v * DT
-        y = np.sin(x/10)
-        goal.extend([x, y, 0, 4, 0, 0])
-    return goal
-
-
 def main():
     # Use TCP server
     # ------------------------------------
@@ -66,12 +34,8 @@ def main():
     u_history = []
     x_history = []
 
-    goal = GOAL_QUEUE.pop(0)
-
     for t in np.arange(0, T*DT, DT):
-        # if euclidean_dist(x, goal) <= 5. and len(GOAL_QUEUE) != 0:
-        #     goal = GOAL_QUEUE.pop(0)
-        goal = get_goal_sin(x)
+        goal = sp.generate_guide_trajectory(x)
         solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU*N))
         # print(f"connection success")
         if solution.is_ok():
@@ -81,7 +45,7 @@ def main():
             raise(ValueError(err.message))
         x_history.append(x)
         u_history.append(u)
-        x = car_ode(x, u)        
+        x = car_ode(x, u)    
 
     # close TCP connection
     mng.kill()
@@ -95,10 +59,10 @@ def main():
 
     fig2, ax2 = plt.subplots()
     ax2.plot(x_history[:,0], x_history[:,1])
-    # ax2.set(aspect="equal")
+    ax2.set(aspect="equal")
 
     fig3, ax3 = plt.subplots()
-    ax3.plot(np.arange(0, T*DT, DT), x_history[:, 3] ** 2 / (L / (np.sin(u_history[:, 0]))))
+    ax3.plot(np.arange(0, T*DT, DT), x_history[:, 3] ** 2 / (L / (np.sin(x_history[:, 4]))))
 
     plt.show()
 
