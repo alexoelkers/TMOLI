@@ -6,15 +6,6 @@ import numpy as np
 from utils import *
 import splinterp as sp
 
-GOAL_QUEUE = [[ 5., 0., 0., 4.], 
-              [10., 0., 0., 4.],
-              [15., 0., 0., 3.],
-              [20., 0., 0., 2.],
-              [23.535, 3.535, np.pi/4, 2.],
-              [25., 5., np.pi/2, 2.],
-              [25, 10., np.pi/2, 3.],
-              [25, 15., np.pi/2, 4.],
-              [25., 150., np.pi/2, 4]]
 
 SIMTIME = 30    # maximum allowable simtime
 T = int(SIMTIME / DT) # simulation period [n]
@@ -29,30 +20,6 @@ def car_ode(x, u):
     phi += u[0] * DT
     a += u[1] * DT
     return np.array([x, y, theta, v, phi, a])
-
-
-def euclidean_dist(s1, s2):
-    """returns the euclidean distance between two states"""
-    x1, y1, *_ = s1
-    x2, y2, *_ = s2
-    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-
-def get_goal(state):
-    x, y, theta, v, *_ = state
-    goal = []
-    for i in range(N):
-        x += v * DT
-        goal.extend([x, 0, 0, 4, 0, 0])
-    return goal
-
-def get_goal_sin(state):
-    x, y, theta, v, *_ = state
-    goal = []
-    for i in range(N):
-        x += v * DT
-        y = np.sin(x/10)
-        goal.extend([x, y, 0, 4, 0, 0])
-    return goal
 
 
 def main():
