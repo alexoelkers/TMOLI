@@ -14,8 +14,10 @@ def next_guide_point(guide_state):
                       0,
                       0,]
     elif x >= XG - K and y < Y0 + K:
-        theta = np.atan((x + K - XG)/(y - Y0))
+        #theta = np.atan((x + K - XG)/(y - Y0))
+        theta = np.atan2(x + K - XG, K - (y + Y0))
         next_theta = theta + OMEGAG * DT
+        print(f"theta = {theta}, next theta = {next_theta}")
         next_state = [XG + K*(np.sin(next_theta) - 1),
                       Y0 + K*(1 - np.cos(next_theta)),
                       next_theta,
@@ -35,5 +37,22 @@ def generate_guide_trajectory(state):
     """a function to generate a guide trajectory for the mpc controller"""
     trajectory = []
     for n in range(N):
-        trajectory.extend(next_guide_point(state))
+        state = next_guide_point(state)
+        trajectory.extend(state)
     return trajectory
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt 
+
+    state = [XG - (K + 1), 
+             Y0, 
+             0, 
+             VG, 
+             0,
+             0]
+    
+    trajectory = np.array(generate_guide_trajectory(state))
+    trajectory = trajectory.reshape((N, NX))
+    fig, ax = plt.subplots()
+    ax.scatter(trajectory[:, 0], trajectory[:, 1])
+    ax.set(aspect="equal")
