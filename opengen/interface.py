@@ -16,7 +16,7 @@ GOAL_QUEUE = [[ 5., 0., 0., 4.],
               [25, 15., np.pi/2, 4.],
               [25., 150., np.pi/2, 4]]
 
-SIMTIME = 60
+SIMTIME = 30    # maximum allowable simtime
 T = int(SIMTIME / DT) # simulation period [n]
 
 def car_ode(x, u):
@@ -78,7 +78,7 @@ def main():
             raise(ValueError(err.message))
         x_history.append(x)
         u_history.append(u)
-        x = car_ode(x, u)        
+        x = car_ode(x, u)    
 
     # close TCP connection
     mng.kill()
@@ -92,10 +92,10 @@ def main():
 
     fig2, ax2 = plt.subplots()
     ax2.plot(x_history[:,0], x_history[:,1])
-    # ax2.set(aspect="equal")
+    ax2.set(aspect="equal")
 
     fig3, ax3 = plt.subplots()
-    ax3.plot(np.arange(0, T*DT, DT), x_history[:, 3] ** 2 / (L / (np.sin(u_history[:, 0]))))
+    ax3.plot(np.arange(0, T*DT, DT), x_history[:, 3] ** 2 / (L / (np.sin(x_history[:, 4]))))
 
     plt.show()
 
