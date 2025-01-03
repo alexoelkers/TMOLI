@@ -8,3 +8,10 @@ UMAX = [100, 0.5] * N
 
 # car parameters
 L = 1   # car length [m]
+
+K = 10  # turn radius
+VG = 4  # vehicle goal velocity
+
+XG = 100
+OMEGAG = VG / K
+Y0 = 0
