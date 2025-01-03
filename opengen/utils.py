@@ -12,6 +12,6 @@ L = 1   # car length [m]
 K = 10  # turn radius
 VG = 4  # vehicle goal velocity
 
-XG = 100
-OMEGAG = VG / K
-Y0 = 0
+XG = 100    # goal x position
+OMEGAG = VG / K # goal angular velocity
+Y0 = 0  # starting y coordinate
