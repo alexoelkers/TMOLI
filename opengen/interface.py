@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from utils import *
+import splinterp as sp
 
 GOAL_QUEUE = [[ 5., 0., 0., 4.], 
               [10., 0., 0., 4.],
@@ -66,12 +67,8 @@ def main():
     u_history = []
     x_history = []
 
-    goal = GOAL_QUEUE.pop(0)
-
     for t in np.arange(0, T*DT, DT):
-        # if euclidean_dist(x, goal) <= 5. and len(GOAL_QUEUE) != 0:
-        #     goal = GOAL_QUEUE.pop(0)
-        goal = get_goal_sin(x)
+        goal = sp.generate_guide_trajectory(x)
         solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU*N))
         # print(f"connection success")
         if solution.is_ok():
