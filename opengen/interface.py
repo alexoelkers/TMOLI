@@ -17,7 +17,7 @@ def car_ode(x, u):
     Parameters:
     -----------
     x (ndarray): state of car at time k, contains 
-                 [x-pos, y-pos, phi, v, delta, a]
+                 [x-pos, y-pos, psi, v, delta, a]
     u (ndarray): input to car at time k, contains
                  [ddelta, jerk]
 
@@ -25,15 +25,15 @@ def car_ode(x, u):
     --------
     x (ndarray): the state of the car at time k+1, in same form as above
     """
-    x, y, theta, v, phi, a = x
-    x += v * np.cos(theta) * DT
-    y += v * np.sin(theta) * DT
-    theta += v * np.sin(phi) * DT
-    theta = (theta + np.pi) % (2 * np.pi) - np.pi
+    x, y, psi, v, delta, a = x
+    x += v * np.cos(psi) * DT
+    y += v * np.sin(psi) * DT
+    psi += v * np.sin(delta) * DT
+    psi = (psi + np.pi) % (2 * np.pi) - np.pi
     v += a * DT
-    phi += u[0] * DT
+    delta += u[0] * DT
     a += u[1] * DT
-    return np.array([x, y, theta, v, phi, a])
+    return np.array([x, y, psi, v, delta, a])
 
 
 def main():

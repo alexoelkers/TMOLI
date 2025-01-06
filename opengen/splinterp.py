@@ -18,7 +18,7 @@ def next_guide_point(guide_state):
     --------
     next_guide_state (ndarray): the next state of the guide trajectory x[k+1]
     """
-    x, y, phi, v, delta, a = guide_state
+    x, y, psi, v, delta, a = guide_state
     if x < XG - K:  # before turn
         next_state = [x + VG * DT,
                       Y0, 
