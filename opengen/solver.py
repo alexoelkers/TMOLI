@@ -37,7 +37,7 @@ def main():
     
     cost = 0
     v_i = []
-    phi_i = []
+    delta_i = []
     acc_i = []
     alat_i = []
 
@@ -53,26 +53,26 @@ def main():
         state[5] += u_i[1] * DT
 
         v_i.append(state[3])
-        phi_i.append(state[4])
+        delta_i.append(state[4])
         acc_i.append(state[5])
         alat_i.append(state[3] ** 2 / (L / (cs.sin(state[4])))) # lateral acceleration
 
     # cost += cs.bilin(V, (state - reference[])) # terminal cost
 
     v_i = cs.vertcat(*v_i)
-    phi_i = cs.vertcat(*phi_i)
+    delta_i = cs.vertcat(*delta_i)
     acc_i = cs.vertcat(*acc_i)
     alat_i = cs.vertcat(*alat_i)
 
     v_lim = og.constraints.BallInf([5.]*N, 5.)      # velocity limits
-    phi_lim = og.constraints.BallInf(None, 0.7)    # steering limit 
+    delta_lim = og.constraints.BallInf(None, 0.7)    # steering limit 
     acc_lim = og.constraints.BallInf(None, 4)       # acceleration limit
     alat_lim = og.constraints.BallInf(None, 4.)     # latteral acceleration limits
 
     bounds = og.constraints.Rectangle(UMIN, UMAX)
 
     problem = og.builder.Problem(u, z0, cost) \
-        .with_aug_lagrangian_constraints(phi_i, phi_lim) \
+        .with_aug_lagrangian_constraints(delta_i, delta_lim) \
         .with_aug_lagrangian_constraints(acc_i, acc_lim) \
         .with_aug_lagrangian_constraints(alat_i, alat_lim) \
         .with_aug_lagrangian_constraints(v_i, v_lim) \
