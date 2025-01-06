@@ -17,7 +17,7 @@ def car_ode(x, u):
     Parameters:
     -----------
     x (ndarray): state of car at time k, contains 
-                 [x-pos, y-pos, phi, v, delta, a]
+                 [x-pos, y-pos, psi, v, delta, a]
     u (ndarray): input to car at time k, contains
                  [ddelta, jerk]
 
