@@ -11,6 +11,20 @@ SIMTIME = 30    # maximum allowable simtime
 T = int(SIMTIME / DT) # simulation period [n]
 
 def car_ode(x, u):
+    """an ODE for the state space of the car in the form 
+    x[k+1] = f(x[k],u[k])
+    
+    Parameters:
+    -----------
+    x (ndarray): state of car at time k, contains 
+                 [x-pos, y-pos, phi, v, delta, a]
+    u (ndarray): input to car at time k, contains
+                 [ddelta, jerk]
+
+    Returns:
+    --------
+    x (ndarray): the state of the car at time k+1, in same form as above
+    """
     x, y, theta, v, phi, a = x
     x += v * np.cos(theta) * DT
     y += v * np.sin(theta) * DT
@@ -23,8 +37,16 @@ def car_ode(x, u):
 
 
 def main():
-    # Use TCP server
-    # ------------------------------------
+    """The primary control loop for simulating the car's motion through state space
+
+    Parameters:
+    -----------
+    None
+
+    Returns:
+    --------
+    None
+    """
     mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation', port=12345)
     mng.start()
 
@@ -34,10 +56,10 @@ def main():
     u_history = []
     x_history = []
 
+    # iterate system through time
     for t in np.arange(0, T*DT, DT):
         goal = sp.generate_guide_trajectory(x)
-        solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU*N))
-        # print(f"connection success")
+        solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU*N))  # call MPC controller
         if solution.is_ok():
             u = solution.get().solution[:NU]
         else:
@@ -45,7 +67,7 @@ def main():
             raise(ValueError(err.message))
         x_history.append(x)
         u_history.append(u)
-        x = car_ode(x, u)    
+        x = car_ode(x, u)   # update car state    
 
     # close TCP connection
     mng.kill()

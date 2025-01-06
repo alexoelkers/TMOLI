@@ -10,12 +10,27 @@ R = cs.diag(cs.SX([10., 10.]))
 V = cs.diag(cs.SX([10., 10., 10., 10., 0., 10.]))
 
 def calc_cost(state, reference, u_i):
-    """the cost function"""
+    """the cost function for the MPC, the value of this funciton is the 
+    minimisation objective"""
     cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
     return cost
 
 
 def main():
+    """MPC control loop
+    
+    This function takes no inputs, instead it compiles an LP problem, which can be accessed by 
+    calling a rust TCP server. Per conventional MPC theory, the solver will try to minimise
+    the cost of an objective function, while staying within all constraints.
+
+    Key call info:
+    --------------
+    u: a vector of all inputs to the system over the solution horizon (optimisation 
+       variable)
+    z0: the input vector of the MPC contains:
+        current state of the vehicle (size NX)
+        target trajectory of the vehicle over the solution horizon (size N*NX)
+    """
     u = cs.SX.sym('u', NU*N)
     z0 = cs.SX.sym('z0', (N+1)*NX)
     state, reference = z0[:NX], z0[NX:]
@@ -27,7 +42,6 @@ def main():
     alat_i = []
 
     for i in range(0, N):
-        # v_i[i] = v
         u_i = u[i*NU:(i+1)*NU]
         ref_i = reference[i*NX:(i+1)*NX]
         cost += calc_cost(state, ref_i, u_i)
@@ -41,9 +55,9 @@ def main():
         v_i.append(state[3])
         phi_i.append(state[4])
         acc_i.append(state[5])
-        alat_i.append(state[3] ** 2 / (L / (cs.sin(state[3])))) # lateral acceleration
+        alat_i.append(state[3] ** 2 / (L / (cs.sin(state[4])))) # lateral acceleration
 
-    # cost += cs.bilin(V, (state - reference[]))
+    # cost += cs.bilin(V, (state - reference[])) # terminal cost
 
     v_i = cs.vertcat(*v_i)
     phi_i = cs.vertcat(*phi_i)
@@ -80,5 +94,5 @@ def main():
                                             solver_config)
     builder.build()
 
-if __name__ == "__main__":
+if __name__ == "__main__":  
     main()
