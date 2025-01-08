@@ -1,4 +1,4 @@
-from utils import *
+from constants import *
 
 #(spawn x, spawn y, spawn time, x-velocity)
 def get_obstacle_definition():

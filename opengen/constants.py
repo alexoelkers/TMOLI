@@ -19,3 +19,9 @@ Y0 = 0  # starting y coordinate
 #obstacle parameters
 OBS_Y = Y0 # + 1.1 * L
 OBS_N = 10 #Changing this value requires recreating the solver
+
+#Constraints #Changing these value requires recreating the solver
+V_MAX = 4
+STEERING_MAX = 0.2
+ACC_MAX = 2
+LATERAL_ACC_MAX = 2

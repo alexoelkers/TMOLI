@@ -2,7 +2,7 @@ import opengen as og
 import casadi.casadi as cs
 import numpy as np
 
-from utils import *
+from constants import *
 
 # Cost parameters
 Q = cs.diag(cs.SX([10., 10., 10, 10., 0., 10.]))

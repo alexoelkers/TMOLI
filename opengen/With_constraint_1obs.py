@@ -4,10 +4,10 @@ import opengen as og
 import casadi.casadi as cs
 import numpy as np
 
-from utils import *
+from constants import *
 
 # cost parameters
-Q = cs.diag(cs.SX([1000., 1000., 10, 1., 1000., 10.]))
+Q = cs.diag(cs.SX([10., 10., 10, 1., 10., 10.]))
 R = cs.diag(cs.SX([10., 10.]))
 V = cs.diag(cs.SX([10., 10., 10., 10., 1000., 10.]))
 
@@ -29,17 +29,11 @@ def main():
     u = cs.SX.sym('u', NU*N)
     z0 = cs.SX.sym('z0', (N+1)*NX + OBS_N*N*2)
     state, reference, obstacles_unshaped = z0[:NX], z0[NX:(N+1)*NX], z0[(N+1)*NX:]
-    obstacles = shape_obstacles(obstacles_unshaped)
-    
     cost = 0
-    v_i = []
-    phi_i = []
-    acc_i = []
-    alat_i = []
-    obstacle_constraints = []
+    constraints = []
 
     for i in range(0, N):
-        # v_i[i] = v
+        #Calculate the cost and update the states
         u_i = u[i*NU:(i+1)*NU]
         ref_i = reference[i*NX:(i+1)*NX]
         cost += calc_cost(state, ref_i, u_i)
@@ -49,47 +43,31 @@ def main():
         state[3] += state[5] * DT
         state[4] += u_i[0] * DT
         state[5] += u_i[1] * DT
-
-        v_i.append(state[3])
-        phi_i.append(state[4])
-        acc_i.append(state[5])
-        alat_i.append(cs.tan(state[4]) * state[3] ** 2 / L) # lateral acceleration
-
-        """distance_squared = (state[0] - x_obstacle) ** 2 + (state[1] - y_obstacle) ** 2
-        obstacle_constraints.append(cs.fmax(0.0, - distance_squared + 2* obstacle_radius))"""
-
-
+        
+        #Constrains the absolute values of the physical properties
+        constraints.append(cs.fmax(state[3] - V_MAX, 0.0))
+        constraints.append(cs.fmax(cs.fabs(state[4]) - STEERING_MAX, 0.0))
+        constraints.append(cs.fmax(cs.fabs(state[5]) - ACC_MAX, 0.0))
+        lateral_acc = cs.tan(state[4]) * state[3] ** 2 / L
+        constraints.append(cs.fmax(cs.fabs(lateral_acc) - LATERAL_ACC_MAX, 0.0))
+        
+        #Obstacle constraints, loop through each obstacle
         for obstacle_i in range(OBS_N):
             obstacle_x = obstacles_unshaped[obstacle_i + (i * 2 * OBS_N)] # obstacles[i, obstacle_i*2]
             obstacle_y = obstacles_unshaped[1 + obstacle_i + (i * 2 * OBS_N)] # obstacles[i, obstacle_i*2 + 1]
             # Obstacle avoidance constraint for each time step
             distance_squared = (state[0] - obstacle_x) ** 2 + (state[1] - obstacle_y) ** 2
             # Negative if no collition, positive if collision. This means penalty approach can be used instead
-            obstacle_constraints.append(cs.fmax(0.0, - cs.sqrt(distance_squared) + 2 * obstacle_radius))  # Must be < 0
+            constraints.append(cs.fmax(0.0, - cs.sqrt(distance_squared) + 2 * obstacle_radius))  # Must be < 0
 
     # Convert obstacle constraints to symbolic vector
-    obstacle_constraints = cs.vertcat(*obstacle_constraints)
-
-    v_i = cs.vertcat(*v_i)
-    phi_i = cs.vertcat(*phi_i)
-    acc_i = cs.vertcat(*acc_i)
-    alat_i = cs.vertcat(*alat_i)
-
-    # Constraints
-    v_lim = og.constraints.BallInf([5.]*N, 5.)      # velocity limits
-    phi_lim = og.constraints.BallInf(None, 0.7)    # steering limit 
-    acc_lim = og.constraints.BallInf(None, 1)       # acceleration limit
-    alat_lim = og.constraints.BallInf(None, 1)     # lateral acceleration limits
+    constraints = cs.vertcat(*constraints)
     bounds = og.constraints.Rectangle(UMIN, UMAX)
-
+    
     # Build the optimization problem with obstacle constraints
     problem = og.builder.Problem(u, z0, cost) \
         .with_constraints(bounds) \
-        .with_penalty_constraints(obstacle_constraints) \
-        .with_aug_lagrangian_constraints(v_i, v_lim) \
-        .with_aug_lagrangian_constraints(acc_i, acc_lim) \
-        .with_aug_lagrangian_constraints(alat_i, alat_lim) \
-        # .with_aug_lagrangian_constraints(phi_i, phi_lim) \
+        .with_penalty_constraints(constraints) \
 
     # Build configuration
     build_config = og.config.BuildConfiguration()\
