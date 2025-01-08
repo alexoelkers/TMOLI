@@ -35,3 +35,14 @@ def get_obstacle_list(time) -> list:
         locations.extend(_get_obstacle_locations(time + DT*i))
 
     return locations
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    obstacles = get_obstacle_list(2)
+
+    fig, ax = plt.subplots()
+    print(obstacles[::OBS_N*2])
+    ax.scatter(obstacles[::OBS_N*2], obstacles[1::OBS_N*2])
