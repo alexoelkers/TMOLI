@@ -5,6 +5,7 @@ import numpy as np
 
 from utils import *
 import splinterp as sp
+import obstacle_generator as obs_gen
 
 
 # Simulation parameters
@@ -26,7 +27,7 @@ def car_ode(x, u):
 
 def main():
     # Start the TCP server for real-time optimization
-    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation', port=12345)
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12345)
     mng.start()
     mng.ping()
 
@@ -39,9 +40,10 @@ def main():
     for t in np.arange(0, T * DT, DT):
         # Generate the goal trajectory
         goal = sp.generate_guide_trajectory(x)
+        obstacles = obs_gen.get_obstacle_list(t)
 
         # Call the optimizer with current state and goal
-        solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU * N))
+        solution = mng.call([*x, *goal, *obstacles], initial_guess=[0.0] * (NU * N))
 
         if solution.is_ok():
             u = solution.get().solution[:NU]

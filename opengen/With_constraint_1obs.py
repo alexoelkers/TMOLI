@@ -21,11 +21,15 @@ def calc_cost(state, reference, u_i):
     cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
     return cost
 
+def shape_obstacles(obstacles_unshaped):
+    return cs.reshape(obstacles_unshaped, (N, OBS_N*2))
+
 
 def main():
     u = cs.SX.sym('u', NU*N)
-    z0 = cs.SX.sym('z0', (N+1)*NX)
-    state, reference = z0[:NX], z0[NX:]
+    z0 = cs.SX.sym('z0', (N+1)*NX + OBS_N*N*2)
+    state, reference, obstacles_unshaped = z0[:NX], z0[NX:(N+1)*NX], z0[(N+1)*NX:]
+    obstacles = shape_obstacles(obstacles_unshaped)
     
     cost = 0
     v_i = []
@@ -51,9 +55,17 @@ def main():
         acc_i.append(state[5])
         alat_i.append(state[3] ** 2 / (L / (cs.sin(state[3])))) # lateral acceleration
 
-        # Obstacle avoidance constraint for each time step
         distance_squared = (state[0] - x_obstacle) ** 2 + (state[1] - y_obstacle) ** 2
-        obstacle_constraints.append(distance_squared - obstacle_radius ** 2)  # Must be > 0
+        obstacle_constraints.append(cs.fmax(0.0, - distance_squared + 2* obstacle_radius))
+
+
+        """ for obstacle_i in range(OBS_N):
+            obstacle_x = obstacles[i, obstacle_i*2]
+            obstacle_y = obstacles[i, obstacle_i*2 + 1]
+            # Obstacle avoidance constraint for each time step
+            distance_squared = (state[0] - obstacle_x) ** 2 + (state[1] - obstacle_y) ** 2
+            # Negative if no collition, positive if collision. This means penalty approach can be used instead
+            obstacle_constraints.append(cs.fmax(0.0, - distance_squared + 2* obstacle_radius))  # Must be < 0 """
 
     # Convert obstacle constraints to symbolic vector
     obstacle_constraints = cs.vertcat(*obstacle_constraints)
@@ -76,7 +88,7 @@ def main():
         .with_aug_lagrangian_constraints(acc_i, acc_lim) \
         .with_aug_lagrangian_constraints(alat_i, alat_lim) \
         .with_aug_lagrangian_constraints(v_i, v_lim) \
-        .with_aug_lagrangian_constraints(obstacle_constraints, og.constraints.BallInf(None, 0)) \
+        .with_penalty_constraints(obstacle_constraints) \
         .with_constraints(bounds)
 
     # Build configuration
@@ -85,7 +97,7 @@ def main():
         .with_build_mode("debug")\
         .with_tcp_interface_config()
     meta = og.config.OptimizerMeta()\
-        .with_optimizer_name("navigation")
+        .with_optimizer_name("navigation_obstacle")
     solver_config = og.config.SolverConfiguration()\
         .with_tolerance(1e-5)
 

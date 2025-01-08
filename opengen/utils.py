@@ -9,9 +9,13 @@ UMAX = [100, 0.5] * N
 # car parameters
 L = 1   # car length [m]
 
-K = 10  # turn radius
+K = 1  # turn radius
 VG = 4  # vehicle goal velocity
 
 XG = 100    # goal x position
 OMEGAG = VG / K # goal angular velocity
 Y0 = 0  # starting y coordinate
+
+#obstacle parameters
+OBS_Y = Y0 + 1.1 * L
+OBS_N = 10 #Changing this value requires recreating the solver
