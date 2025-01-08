@@ -5,6 +5,7 @@ import numpy as np
 from constants import *
 
 # cost parameters
+# [x-pos, y-pos, psi, v, delta, a]
 Q = cs.diag(cs.SX([10., 10., 10, 1., 10., 10.]))
 R = cs.diag(cs.SX([10., 10.]))
 V = cs.diag(cs.SX([10., 10., 10., 10., 1000., 10.]))
