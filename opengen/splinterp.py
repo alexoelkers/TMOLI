@@ -30,6 +30,7 @@ def next_guide_point(guide_state):
         #theta = np.atan((x + K - XG)/(y - Y0))
         theta = np.atan2(x + K - XG, K - (y + Y0))
         next_theta = theta + OMEGAG * DT
+
         next_state = [XG + K*(np.sin(next_theta) - 1),
                       Y0 + K*(1 - np.cos(next_theta)),
                       next_theta,

@@ -5,88 +5,54 @@ import numpy as np
 
 from utils import *
 import splinterp as sp
-import obstacle_generator as obs_gen
 
 
 # Simulation parameters
 SIMTIME = 30  # Maximum allowable simulation time
 T = int(SIMTIME / DT)  # Total simulation steps
 
-
 def car_ode(x, u):
-
-    """an ODE for the state space of the car in the form 
-    x[k+1] = f(x[k],u[k])
-    
-    Parameters:
-    -----------
-    x (ndarray): state of car at time k, contains 
-                 [x-pos, y-pos, psi, v, delta, a]
-    u (ndarray): input to car at time k, contains
-                 [ddelta, jerk]
-
-    Returns:
-    --------
-    x (ndarray): the state of the car at time k+1, in same form as above
-    """
-    x, y, psi, v, delta, a = x
-    x += v * np.cos(psi) * DT
-    y += v * np.sin(psi) * DT
-    psi += v * np.sin(delta) * DT
-    psi = (psi + np.pi) % (2 * np.pi) - np.pi
-
+    """Car dynamics using a simple kinematic model."""
+    x, y, theta, v, phi, a = x
+    x += v * np.cos(theta) * DT
+    y += v * np.sin(theta) * DT
+    theta += v * np.sin(phi) * DT
+    theta = (theta + np.pi) % (2 * np.pi) - np.pi
     v += a * DT
-    delta += u[0] * DT
+    phi += u[0] * DT
     a += u[1] * DT
-    return np.array([x, y, psi, v, delta, a])
+    return np.array([x, y, theta, v, phi, a])
 
 
 def main():
-    """The primary control loop for simulating the car's motion through state space
-
-    Parameters:
-    -----------
-    None
-
-    Returns:
-    --------
-    None
-    """
+    # Start the TCP server for real-time optimization
     mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation', port=12345)
-
     mng.start()
     mng.ping()
 
     # Initial car state: x, y, theta, velocity (v), steering angle (phi), acceleration (a)
-    x = np.array([0, 0, 0, 1, 0, 0])
+    x = np.array([0, 0, 0, 4, 0, 0])
 
     u_history = []  # Store control inputs over time
     x_history = []  # Store state trajectories over time
-    obstacle_history = []
-    for i in range(OBS_N):
-        obstacle_history.append([])
 
     for t in np.arange(0, T * DT, DT):
         # Generate the goal trajectory
         goal = sp.generate_guide_trajectory(x)
-        obstacles = obs_gen.get_obstacle_list(t)
-        for i in range(OBS_N):
-            obstacle_history[i].append((obstacles[2*i:2*(i+1)]))
 
         # Call the optimizer with current state and goal
-        solution = mng.call([*x, *goal, *obstacles], initial_guess=[0.0] * (NU * N))
+        solution = mng.call([*x, *goal], initial_guess=[0.0] * (NU * N))
+
         if solution.is_ok():
             u = solution.get().solution[:NU]
         else:
             err = solution.get()
-            raise ValueError(f"time {t}: err.message")
+            raise ValueError(err.message)
 
         # Update the car's state and append history
         x_history.append(x)
         u_history.append(u)
-
-        x = car_ode(x, u)   # update car state    
-
+        x = car_ode(x, u)
 
     # Close the TCP connection
     mng.kill()
@@ -94,19 +60,16 @@ def main():
     # Convert histories to numpy arrays for easier plotting
     x_history = np.array(x_history)
     u_history = np.array(u_history)
-    obstacle_history = np.array(obstacle_history)
-    print(f"obstacle history shape = {obstacle_history.shape}")
 
     # ---- Plot Results ----
 
     # Plot car state variables over time
     fig1, ax1 = plt.subplots()
-    ax1.plot(np.arange(0, T * DT, DT), x_history[:, 2:], label=["Theta", "V", "Phi", "A"])
+    ax1.plot(np.arange(0, T * DT, DT), x_history[:, 1:], label=["Y", "Theta", "V", "Phi", "A"])
     ax1.set_title("State Variables Over Time")
     ax1.set_xlabel("Time (s)")
     ax1.set_ylabel("State Values")
-    ax1.legend(["Theta (Heading)", "Velocity (V)", "Steering Angle (Phi)", "Acceleration (A)"])
-    print(f"max state variables: {np.max(x_history, 0)}")
+    ax1.legend(["Y Position", "Theta (Heading)", "Velocity (V)", "Steering Angle (Phi)", "Acceleration (A)"])
 
     # Plot car trajectory
     fig2, ax2 = plt.subplots()
@@ -117,18 +80,13 @@ def main():
 
     # Plot lateral acceleration
     fig3, ax3 = plt.subplots()
-    ax3.plot(np.arange(0, T * DT, DT), np.tan(x_history[:, 4]) * x_history[:, 3] ** 2 / L)
+    ax3.plot(np.arange(0, T * DT, DT), x_history[:, 3] ** 2 / (L / (np.sin(x_history[:, 4]))))
     ax3.set_title("Lateral Acceleration")
 
     # Plot obstacle and car positions over time
     fig4, ax4 = plt.subplots()
     ax4.plot(np.arange(0, T * DT, DT), x_history[:, 0], label="Car X Position", linestyle="-", color="blue")
     ax4.plot(np.arange(0, T * DT, DT), x_history[:, 1], label="Car Y Position", linestyle="-", color="green")
-    
-    # plot obstacle 2 position
-    obs = 0
-    ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 0], label="Obs X Position", linestyle="-", color="red")
-    ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 1], label="Obs Y Position", linestyle="-", color="orange")
     ax4.set_title("Car Positions Over Time")
     ax4.set_xlabel("Time (s)")
     ax4.set_ylabel("Position (m)")
