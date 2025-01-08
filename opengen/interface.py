@@ -14,21 +14,46 @@ T = int(SIMTIME / DT)  # Total simulation steps
 
 
 def car_ode(x, u):
-    """Car dynamics using a simple kinematic model."""
-    x, y, theta, v, phi, a = x
-    x += v * np.cos(theta) * DT
-    y += v * np.sin(theta) * DT
-    theta += v * np.sin(phi) * DT
-    theta = (theta + np.pi) % (2 * np.pi) - np.pi
+
+    """an ODE for the state space of the car in the form 
+    x[k+1] = f(x[k],u[k])
+    
+    Parameters:
+    -----------
+    x (ndarray): state of car at time k, contains 
+                 [x-pos, y-pos, psi, v, delta, a]
+    u (ndarray): input to car at time k, contains
+                 [ddelta, jerk]
+
+    Returns:
+    --------
+    x (ndarray): the state of the car at time k+1, in same form as above
+    """
+    x, y, psi, v, delta, a = x
+    x += v * np.cos(psi) * DT
+    y += v * np.sin(psi) * DT
+    psi += v * np.sin(delta) * DT
+    psi = (psi + np.pi) % (2 * np.pi) - np.pi
+
     v += a * DT
-    phi += u[0] * DT
+    delta += u[0] * DT
     a += u[1] * DT
-    return np.array([x, y, theta, v, phi, a])
+    return np.array([x, y, psi, v, delta, a])
 
 
 def main():
-    # Start the TCP server for real-time optimization
-    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12345)
+    """The primary control loop for simulating the car's motion through state space
+
+    Parameters:
+    -----------
+    None
+
+    Returns:
+    --------
+    None
+    """
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation', port=12345)
+
     mng.start()
     mng.ping()
 
@@ -50,7 +75,6 @@ def main():
 
         # Call the optimizer with current state and goal
         solution = mng.call([*x, *goal, *obstacles], initial_guess=[0.0] * (NU * N))
-
         if solution.is_ok():
             u = solution.get().solution[:NU]
         else:
@@ -60,7 +84,9 @@ def main():
         # Update the car's state and append history
         x_history.append(x)
         u_history.append(u)
-        x = car_ode(x, u)
+
+        x = car_ode(x, u)   # update car state    
+
 
     # Close the TCP connection
     mng.kill()

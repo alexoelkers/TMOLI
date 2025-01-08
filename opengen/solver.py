@@ -16,12 +16,14 @@ r_obs = 1        # Radius of the obstacle
 obstacle_speed = -1  # Speed of the obstacle in the x-direction
 
 def calc_cost(state, reference, u_i):
-    """the cost function"""
+    """the cost function for the MPC, the value of this funciton is the 
+    minimisation objective"""
     cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
     return cost
 
 
 def main():
+
     # Predict obstacle positions over the horizon
     obstacle_positions = []
     for i in range(N):
@@ -30,19 +32,36 @@ def main():
         y_obs = y_obs_initial
         obstacle_positions.append([x_obs, y_obs])
     
+
+    """MPC control loop
+    
+    This function takes no inputs, instead it compiles an LP problem, which can be accessed by 
+    calling a rust TCP server. Per conventional MPC theory, the solver will try to minimise
+    the cost of an objective function, while staying within all constraints.
+
+    Key call info:
+    --------------
+    u: a vector of all inputs to the system over the solution horizon (optimisation 
+       variable)
+    z0: the input vector of the MPC contains:
+        current state of the vehicle (size NX)
+        target trajectory of the vehicle over the solution horizon (size N*NX)
+    """
+
     u = cs.SX.sym('u', NU*N)
     z0 = cs.SX.sym('z0', (N+1)*NX)
     state, reference = z0[:NX], z0[NX:]
     
     cost = 0
     v_i = []
-    phi_i = []
+    delta_i = []
     acc_i = []
     alat_i = []
     obstacle_penalty = []
 
     for i in range(0, N):
         # Extract controls and reference
+
         u_i = u[i*NU:(i+1)*NU]
         ref_i = reference[i*NX:(i+1)*NX]
         
@@ -58,8 +77,9 @@ def main():
         state[5] += u_i[1] * DT
 
         v_i.append(state[3])
-        phi_i.append(state[4])
+        delta_i.append(state[4])
         acc_i.append(state[5])
+
         alat_i.append(state[3] ** 2 / (L / (cs.sin(state[3]))))  # lateral acceleration
 
         # Get predicted future obstacle position
@@ -70,9 +90,14 @@ def main():
         penalty = cs.fmax(0, r_obs**2 - dist_to_obstacle)  # Penalize if inside the obstacle
         obstacle_penalty.append(penalty)
 
+        alat_i.append(state[3] ** 2 / (L / (cs.sin(state[4])))) # lateral acceleration
+
+    # cost += cs.bilin(V, (state - reference[])) # terminal cost
+
+
     # Flatten lists to concatenate
     v_i = cs.vertcat(*v_i)
-    phi_i = cs.vertcat(*phi_i)
+    delta_i = cs.vertcat(*delta_i)
     acc_i = cs.vertcat(*acc_i)
     alat_i = cs.vertcat(*alat_i)
     obstacle_penalty = cs.vertcat(*obstacle_penalty)
@@ -82,7 +107,7 @@ def main():
 
     # Define limits and bounds for the problem
     v_lim = og.constraints.BallInf([5.]*N, 5.)      # velocity limits
-    phi_lim = og.constraints.BallInf(None, 0.7)    # steering limit 
+    delta_lim = og.constraints.BallInf(None, 0.7)    # steering limit 
     acc_lim = og.constraints.BallInf(None, 4)       # acceleration limit
     alat_lim = og.constraints.BallInf(None, 4.)     # lateral acceleration limits
 
@@ -90,7 +115,7 @@ def main():
 
     # Define the optimization problem
     problem = og.builder.Problem(u, z0, cost) \
-        .with_aug_lagrangian_constraints(phi_i, phi_lim) \
+        .with_aug_lagrangian_constraints(delta_i, delta_lim) \
         .with_aug_lagrangian_constraints(acc_i, acc_lim) \
         .with_aug_lagrangian_constraints(alat_i, alat_lim) \
         .with_aug_lagrangian_constraints(v_i, v_lim) \
@@ -114,6 +139,9 @@ def main():
                                             build_config,
                                             solver_config)
     builder.build()
-
+    
 if __name__ == "__main__":
+    main()
+
+if __name__ == "__main__":  
     main()
