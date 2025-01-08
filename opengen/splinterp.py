@@ -1,4 +1,4 @@
-from utils import *
+from constants import *
 import numpy as np
 
 """a simple library for spline interpolation through state space
