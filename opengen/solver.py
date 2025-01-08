@@ -1,3 +1,5 @@
+#For this solver we add a constraint for the obstacle, and we don't add the obstacle directly to the cost function. DOESN'T WORK (1 Static obstacle)
+
 import opengen as og
 import casadi.casadi as cs
 import numpy as np
