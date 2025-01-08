@@ -14,9 +14,15 @@ x_obstacle = 50
 y_obstacle = 0
 obstacle_radius = 0.5
 
-def calc_cost(state, reference, u_i):
+def calc_cost(state, reference, u_i, obstacles_unshaped):
     """the cost function"""
     cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
+    #Add the "no-infront cost"
+    for i in range(OBS_N):
+        obstacle_x = obstacles_unshaped[i + (i * 2 * OBS_N)]
+        obstacle_y = obstacles_unshaped[1 + i + (i * 2 * OBS_N)]
+        infront_cost = INFRONT_MAXCOST * cs.fmax(0, INFRONT_DISTANCE - (obstacle_x - state[0]))
+        cost += cs.sign(cs.fmax(0, 2*obstacle_radius - cs.fabs(state[1] - obstacle_y))) * infront_cost
     return cost
 
 def shape_obstacles(obstacles_unshaped):
@@ -34,7 +40,7 @@ def main():
         #Calculate the cost and update the states
         u_i = u[i*NU:(i+1)*NU]
         ref_i = reference[i*NX:(i+1)*NX]
-        cost += calc_cost(state, ref_i, u_i)
+        cost += calc_cost(state, ref_i, u_i, obstacles_unshaped)
         state[0] += state[3] * cs.cos(state[2]) * DT
         state[1] += state[3] * cs.sin(state[2]) * DT
         state[2] += state[3] * cs.sin(state[4]) * DT

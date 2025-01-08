@@ -4,7 +4,7 @@ from constants import *
 def get_obstacle_definition():
     return [(XG + 10, OBS_Y, 1, -1), 
             (50, 0, 0, 0), 
-            (XG + 10, OBS_Y, 3, -1), 
+            (XG + 10, OBS_Y, 15, -3), 
             (XG + 10, OBS_Y, 4, -1), 
             (XG + 10, OBS_Y, 5, -1)]
 
