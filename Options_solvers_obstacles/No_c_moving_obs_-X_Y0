@@ -1,3 +1,5 @@
+#In this example the obstacle is moving in the negative X direction. The obstacle is in y=0, so the car avoids the collision by changing it's trajectory
+#So far i've only considered avoiding collision with the centre of the car, havent considered the entire car
 import opengen as og
 import casadi.casadi as cs
 import numpy as np
@@ -10,26 +12,24 @@ R = cs.diag(cs.SX([10., 10.]))
 V = cs.diag(cs.SX([10., 10., 10., 10., 0., 10.]))
 
 # Obstacle parameters (moving obstacle)
-x_obs_initial = 50  # Initial x position of the obstacle
+x_obs_initial = 80  # Initial x position of the obstacle
 y_obs_initial = 0   # Initial y position of the obstacle
 r_obs = 1        # Radius of the obstacle
-obstacle_speed = -1  # Speed of the obstacle in the x-direction
+obstacle_speed = -2  # Speed of the obstacle in the x-direction
 
 def calc_cost(state, reference, u_i):
     """the cost function"""
     cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
     return cost
 
+def moving_obstacle(t):
+    """Define the position of the moving obstacle as a function of time."""
+    # Simple linear motion in x-direction; constant speed along x
+    x_obs = x_obs_initial + obstacle_speed * t
+    y_obs = y_obs_initial  # Y position doesn't change, for simplicity
+    return x_obs, y_obs
 
 def main():
-    # Predict obstacle positions over the horizon
-    obstacle_positions = []
-    for i in range(N):
-        t = i * DT
-        x_obs = x_obs_initial + obstacle_speed * t  # Predicted future position
-        y_obs = y_obs_initial
-        obstacle_positions.append([x_obs, y_obs])
-    
     u = cs.SX.sym('u', NU*N)
     z0 = cs.SX.sym('z0', (N+1)*NX)
     state, reference = z0[:NX], z0[NX:]
@@ -62,8 +62,9 @@ def main():
         acc_i.append(state[5])
         alat_i.append(state[3] ** 2 / (L / (cs.sin(state[3]))))  # lateral acceleration
 
-        # Get predicted future obstacle position
-        x_obs, y_obs = obstacle_positions[i]
+        # Get the moving obstacle position at the current time step
+        t = i * DT  # Time at current step
+        x_obs, y_obs = moving_obstacle(t)
         
         # Calculate penalty for collision with the moving obstacle
         dist_to_obstacle = (state[0] - x_obs)**2 + (state[1] - y_obs)**2  # squared distance to obstacle

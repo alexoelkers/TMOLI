@@ -1,35 +1,28 @@
+#For this solver we don't add a constraint for the obstacle, we add the obstacle directly to the cost function. IT WORKS (1 Static obstacles)
+#So far i've only considered avoiding collision with the centre of the car, havent considered the entire car
+
 import opengen as og
 import casadi.casadi as cs
 import numpy as np
 
 from utils import *
 
-# Cost parameters
+# cost parameters
 Q = cs.diag(cs.SX([10., 10., 10, 10., 0., 10.]))
 R = cs.diag(cs.SX([10., 10.]))
 V = cs.diag(cs.SX([10., 10., 10., 10., 0., 10.]))
 
-# Obstacle parameters (moving obstacle)
-x_obs_initial = 50  # Initial x position of the obstacle
-y_obs_initial = 0   # Initial y position of the obstacle
-r_obs = 1        # Radius of the obstacle
-obstacle_speed = -1  # Speed of the obstacle in the x-direction
+# Circular obstacle parameters
+x_obs = 50
+y_obs = 0
+r_obs = 0.5
 
 def calc_cost(state, reference, u_i):
     """the cost function"""
     cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
     return cost
 
-
 def main():
-    # Predict obstacle positions over the horizon
-    obstacle_positions = []
-    for i in range(N):
-        t = i * DT
-        x_obs = x_obs_initial + obstacle_speed * t  # Predicted future position
-        y_obs = y_obs_initial
-        obstacle_positions.append([x_obs, y_obs])
-    
     u = cs.SX.sym('u', NU*N)
     z0 = cs.SX.sym('z0', (N+1)*NX)
     state, reference = z0[:NX], z0[NX:]
@@ -62,10 +55,7 @@ def main():
         acc_i.append(state[5])
         alat_i.append(state[3] ** 2 / (L / (cs.sin(state[3]))))  # lateral acceleration
 
-        # Get predicted future obstacle position
-        x_obs, y_obs = obstacle_positions[i]
-        
-        # Calculate penalty for collision with the moving obstacle
+        # Obstacle avoidance constraint (penalty)
         dist_to_obstacle = (state[0] - x_obs)**2 + (state[1] - y_obs)**2  # squared distance to obstacle
         penalty = cs.fmax(0, r_obs**2 - dist_to_obstacle)  # Penalize if inside the obstacle
         obstacle_penalty.append(penalty)
