@@ -2,16 +2,11 @@ import opengen as og
 import casadi.casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 from constants import *
 import splinterp as sp
 import obstacle_generator as obs_gen
-
-
-# Simulation parameters
-SIMTIME = 30  # Maximum allowable simulation time
-T = int(SIMTIME / DT)  # Total simulation steps
-
 
 def car_ode(x, u):
 
@@ -66,6 +61,8 @@ def main():
     for i in range(OBS_N):
         obstacle_history.append([])
 
+    start = time.process_time()
+
     for t in np.arange(0, T * DT, DT):
         # Generate the goal trajectory
         goal = sp.generate_guide_trajectory(x)
@@ -87,6 +84,8 @@ def main():
 
         x = car_ode(x, u)   # update car state    
 
+    stop = time.process_time()
+    print(f"Solved in {round(stop - start, 2)} s")
 
     # Close the TCP connection
     mng.kill()
