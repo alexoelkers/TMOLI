@@ -7,9 +7,9 @@ import numpy as np
 from utils import *
 
 # cost parameters
-Q = cs.diag(cs.SX([10., 10., 10, 10., 0., 10.]))
+Q = cs.diag(cs.SX([1000., 1000., 10, 1., 1000., 10.]))
 R = cs.diag(cs.SX([10., 10.]))
-V = cs.diag(cs.SX([10., 10., 10., 10., 0., 10.]))
+V = cs.diag(cs.SX([10., 10., 10., 10., 1000., 10.]))
 
 # Obstacle parameters
 x_obstacle = 50
@@ -78,18 +78,18 @@ def main():
     # Constraints
     v_lim = og.constraints.BallInf([5.]*N, 5.)      # velocity limits
     phi_lim = og.constraints.BallInf(None, 0.7)    # steering limit 
-    acc_lim = og.constraints.BallInf(None, 2)       # acceleration limit
-    alat_lim = og.constraints.BallInf(None, 4)     # lateral acceleration limits
+    acc_lim = og.constraints.BallInf(None, 1)       # acceleration limit
+    alat_lim = og.constraints.BallInf(None, 1)     # lateral acceleration limits
     bounds = og.constraints.Rectangle(UMIN, UMAX)
 
     # Build the optimization problem with obstacle constraints
     problem = og.builder.Problem(u, z0, cost) \
         .with_constraints(bounds) \
-        .with_penalty_constraints(obstacle_constraints)
+        .with_penalty_constraints(obstacle_constraints) \
+        .with_aug_lagrangian_constraints(v_i, v_lim) \
+        .with_aug_lagrangian_constraints(acc_i, acc_lim) \
+        .with_aug_lagrangian_constraints(alat_i, alat_lim) \
         # .with_aug_lagrangian_constraints(phi_i, phi_lim) \
-        # .with_aug_lagrangian_constraints(acc_i, acc_lim) \
-        # .with_aug_lagrangian_constraints(v_i, v_lim) \
-        # .with_aug_lagrangian_constraints(alat_i, alat_lim) \
 
     # Build configuration
     build_config = og.config.BuildConfiguration()\
