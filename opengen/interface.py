@@ -74,6 +74,11 @@ def main():
         solution = mng.call([*x, *goal, *obstacles], initial_guess=[0.0] * (NU * N))
         if solution.is_ok():
             u = solution.get().solution[:NU]
+            status = solution.get().exit_status
+            if status != "Converged":
+                print(f"Warning! {solution.get().exit_status} at {round(t, 2)} s")
+                print(solution.get().num_inner_iterations)
+                print(solution.get().num_outer_iterations)
         else:
             err = solution.get()
             raise ValueError(f"time {t}: {err.message}")

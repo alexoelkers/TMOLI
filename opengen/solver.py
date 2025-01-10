@@ -82,7 +82,8 @@ def main():
         .with_optimizer_name("navigation_obstacle")
     solver_config = og.config.SolverConfiguration()\
         .with_tolerance(1e-5) \
-        .with_initial_penalty(5)
+        .with_initial_penalty(6) \
+        .with_max_outer_iterations(50)
 
     builder = og.builder.OpEnOptimizerBuilder(problem,
                                             meta,
