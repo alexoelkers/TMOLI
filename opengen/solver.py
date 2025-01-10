@@ -58,12 +58,12 @@ def main():
         
         #Obstacle constraints, loop through each obstacle
         for obstacle_i in range(OBS_N):
-            obstacle_x = obstacles_unshaped[obstacle_i + (i * 2 * OBS_N)] # obstacles[i, obstacle_i*2]
-            obstacle_y = obstacles_unshaped[1 + obstacle_i + (i * 2 * OBS_N)] # obstacles[i, obstacle_i*2 + 1]
+            obstacle_x = obstacles_unshaped[obstacle_i * 2 + (i * 2 * OBS_N)] # obstacles[i, obstacle_i*2]
+            obstacle_y = obstacles_unshaped[1 + obstacle_i * 2 + (i * 2 * OBS_N)] # obstacles[i, obstacle_i*2 + 1]
             # Obstacle avoidance constraint for each time step
             distance_squared = (state[0] - obstacle_x) ** 2 + (state[1] - obstacle_y) ** 2
             # Negative if no collition, positive if collision. This means penalty approach can be used instead
-            constraints.append(100*cs.fmax(0.0, - cs.sqrt(distance_squared) + 2 * obstacle_radius))  # Must be < 0
+            constraints.append(cs.fmax(0.0, - cs.sqrt(distance_squared) + 2 * obstacle_radius))  # Must be < 0
 
     # Convert obstacle constraints to symbolic vector
     constraints = cs.vertcat(*constraints)
@@ -85,7 +85,7 @@ def main():
         .with_tolerance(5e-5) \
         .with_delta_tolerance(1e-5) \
         .with_max_outer_iterations(100) \
-        .with_initial_penalty(5)
+        .with_initial_penalty(3)
 
     builder = og.builder.OpEnOptimizerBuilder(problem,
                                             meta,

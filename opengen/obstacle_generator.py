@@ -6,15 +6,15 @@ def get_obstacle_definition():
             (102.5, 1.93, 18.7, -2),
             (105.5, 1.93, 18.7, -2),
             (108.5, 1.93, 18.7, -2),
-            (115.5, 1.93, 18.7, -2)]
+            (115.5, 1.93, 18.7, -2),
+            (-40, 0, 0, 0)]
 
 def _get_obstacle_locations(time):
     obstacle_list = get_obstacle_definition()
     len_obstacles = len(obstacle_list)
 
     if len_obstacles < OBS_N:
-        print("whoops!")
-        obstacle_list += [(10 + 25*i, 0, 0, 0) for i in range(OBS_N - len_obstacles)]
+        obstacle_list += [(-10 - 25*i, 0, 0, 0) for i in range(OBS_N - len_obstacles)]
 
     locations = []
     for obstacle in obstacle_list:
