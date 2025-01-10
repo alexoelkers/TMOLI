@@ -6,8 +6,8 @@ from constants import *
 
 # cost parameters
 # [x-pos, y-pos, psi, v, angular velocity]
-Q = cs.diag(cs.SX([10., 10., 10., 0.025, 20.]))
-R = cs.diag(cs.SX([10., 10.])) #steering_angle, acceleration
+Q = 0.5*cs.diag(cs.SX([5., 5., 5., 0.25, 10.]))
+R = 0.5*cs.diag(cs.SX([5., 5.])) #steering_angle, acceleration
 
 # Obstacle parameters
 x_obstacle = 50

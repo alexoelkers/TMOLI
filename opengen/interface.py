@@ -58,7 +58,7 @@ def main():
     --------
     None
     """
-    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12348)
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12352)
 
     mng.start()
     mng.ping()
@@ -89,6 +89,7 @@ def main():
             status = solution.get().exit_status
             f2_norms.append((solution.get().f2_norm, t))
             if status != "Converged":
+                print(f"f2: {solution.get().f2_norm}")
                 print(f"Warning! {solution.get().exit_status} at {round(t, 2)} s")
                 print(solution.get().num_inner_iterations)
                 print(solution.get().num_outer_iterations)
