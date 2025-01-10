@@ -7,7 +7,7 @@ def get_obstacle_definition():
             (105.5, 1.93, 18.7, -2),
             (108.5, 1.93, 18.7, -2),
             (115.5, 1.93, 18.7, -2),
-            (-40, 0, 0, 0)]
+            (40, 0, 0, 0)]
 
 def _get_obstacle_locations(time):
     obstacle_list = get_obstacle_definition()

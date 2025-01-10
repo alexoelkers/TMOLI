@@ -6,7 +6,7 @@ from constants import *
 
 # cost parameters
 # [x-pos, y-pos, psi, v, angular velocity]
-Q = 0.5*cs.diag(cs.SX([5., 5., 5., 0.25, 10.]))
+Q = 0.25*cs.diag(cs.SX([5., 5., 5., 0.25, 10.]))
 R = 0.5*cs.diag(cs.SX([5., 5.])) #steering_angle, acceleration
 
 # Obstacle parameters
@@ -83,9 +83,9 @@ def main():
         .with_optimizer_name("navigation_obstacle")
     solver_config = og.config.SolverConfiguration()\
         .with_tolerance(5e-5) \
-        .with_delta_tolerance(1e-5) \
+        .with_delta_tolerance(1e-6) \
         .with_max_outer_iterations(100) \
-        .with_initial_penalty(3)
+        .with_initial_penalty(1)
 
     builder = og.builder.OpEnOptimizerBuilder(problem,
                                             meta,
