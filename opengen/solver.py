@@ -5,9 +5,9 @@ import numpy as np
 from constants import *
 
 # cost parameters
-# [x-pos, y-pos, psi, v, delta, a]
-Q = cs.diag(cs.SX([10., 10., 10, 1., 10., 10.]))
-R = cs.diag(cs.SX([10., 10.])) #jerk, steering_angle
+# [x-pos, y-pos, psi, v, angular velocity]
+Q = cs.diag(cs.SX([10., 10., 10., 0.05, 20.]))
+R = cs.diag(cs.SX([10., 10.])) #steering_angle, acceleration
 
 # Obstacle parameters
 x_obstacle = 50
@@ -17,12 +17,15 @@ obstacle_radius = 0.5
 def calc_cost(state, reference, u_i, obstacles_unshaped):
     """the cost function"""
     cost = cs.bilin(Q, (state - reference)) + cs.bilin(R, u_i)
-    #Add the "no-infront cost"
+    #Add the "no-infront cost" and a repulsive field around the obstacles
     for i in range(OBS_N):
         obstacle_x = obstacles_unshaped[i + (i * 2 * OBS_N)]
         obstacle_y = obstacles_unshaped[1 + i + (i * 2 * OBS_N)]
         infront_cost = INFRONT_MAXCOST * cs.fmax(0, INFRONT_DISTANCE - (obstacle_x - state[0]))
         cost += cs.sign(cs.fmax(0, 2*obstacle_radius - cs.fabs(state[1] - obstacle_y))) * infront_cost
+
+        #Repulsive field
+        cost += cs.fmax(MAX_COST - (state[1] - obstacle_y)**2 - (obstacle_x - state[0])**2, 0)
     return cost
 
 def shape_obstacles(obstacles_unshaped):
@@ -44,14 +47,12 @@ def main():
         state[0] += state[3] * cs.cos(state[2]) * DT
         state[1] += state[3] * cs.sin(state[2]) * DT
         state[2] += state[3] * cs.sin(state[4]) * DT
-        state[3] += state[5] * DT
+        state[3] += u_i[1] * DT
         state[4] += u_i[0] * DT
-        state[5] += u_i[1] * DT
         
         #Constrains the absolute values of the physical properties
         constraints.append(cs.fmax(state[3] - V_MAX, 0.0))
         constraints.append(cs.fmax(cs.fabs(state[4]) - STEERING_MAX, 0.0))
-        constraints.append(cs.fmax(cs.fabs(state[5]) - ACC_MAX, 0.0))
         lateral_acc = cs.tan(state[4]) * state[3] ** 2 / L
         constraints.append(cs.fmax(cs.fabs(lateral_acc) - LATERAL_ACC_MAX, 0.0))
         
@@ -62,7 +63,7 @@ def main():
             # Obstacle avoidance constraint for each time step
             distance_squared = (state[0] - obstacle_x) ** 2 + (state[1] - obstacle_y) ** 2
             # Negative if no collition, positive if collision. This means penalty approach can be used instead
-            constraints.append(cs.fmax(0.0, - cs.sqrt(distance_squared) + 2 * obstacle_radius))  # Must be < 0
+            constraints.append(100*cs.fmax(0.0, - cs.sqrt(distance_squared) + 2 * obstacle_radius))  # Must be < 0
 
     # Convert obstacle constraints to symbolic vector
     constraints = cs.vertcat(*constraints)
@@ -81,9 +82,10 @@ def main():
     meta = og.config.OptimizerMeta()\
         .with_optimizer_name("navigation_obstacle")
     solver_config = og.config.SolverConfiguration()\
-        .with_tolerance(1e-5) \
-        .with_initial_penalty(6) \
-        .with_max_outer_iterations(50)
+        .with_tolerance(5e-5) \
+        .with_delta_tolerance(1e-5) \
+        .with_max_outer_iterations(100) \
+        .with_initial_penalty(5)
 
     builder = og.builder.OpEnOptimizerBuilder(problem,
                                             meta,

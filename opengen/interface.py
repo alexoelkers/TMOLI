@@ -24,16 +24,27 @@ def car_ode(x, u):
     --------
     x (ndarray): the state of the car at time k+1, in same form as above
     """
-    x, y, psi, v, delta, a = x
+    x, y, psi, v, delta = x
     x += v * np.cos(psi) * DT
     y += v * np.sin(psi) * DT
     psi += v * np.sin(delta) * DT
     psi = (psi + np.pi) % (2 * np.pi) - np.pi
 
-    v += a * DT
+    v += u[1] * DT
     delta += u[0] * DT
-    a += u[1] * DT
-    return np.array([x, y, psi, v, delta, a])
+    return np.array([x, y, psi, v, delta])
+
+def collision_detector(x_history, obstacles_history):
+    for step, t in enumerate(np.arange(0, T * DT, DT)):
+        for obstacle in range(OBS_N):
+            x_delta = x_history[step, 0] - obstacles_history[obstacle, step, 0]
+            y_delta = x_history[step, 1] - obstacles_history[obstacle, step, 1]
+            distance = np.sqrt(x_delta**2 + y_delta**2)
+
+            if distance < 1:
+                print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
+
+
 
 
 def main():
@@ -47,13 +58,13 @@ def main():
     --------
     None
     """
-    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12345)
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12347)
 
     mng.start()
     mng.ping()
 
-    # Initial car state: x, y, theta, velocity (v), steering angle (phi), acceleration (a)
-    x = np.array([0, 0, 0, 1, 0, 0])
+    # Initial car state: x, y, theta, velocity (v), steering angle (phi)
+    x = np.array([0, 0, 0, 1, 0])
 
     u_history = []  # Store control inputs over time
     x_history = []  # Store state trajectories over time
@@ -62,6 +73,7 @@ def main():
         obstacle_history.append([])
 
     start = time.process_time()
+    f2_norms = []
 
     for t in np.arange(0, T * DT, DT):
         # Generate the goal trajectory
@@ -75,6 +87,7 @@ def main():
         if solution.is_ok():
             u = solution.get().solution[:NU]
             status = solution.get().exit_status
+            f2_norms.append((solution.get().f2_norm, t))
             if status != "Converged":
                 print(f"Warning! {solution.get().exit_status} at {round(t, 2)} s")
                 print(solution.get().num_inner_iterations)
@@ -91,6 +104,7 @@ def main():
 
     stop = time.process_time()
     print(f"Solved in {round(stop - start, 2)} s")
+    print(f"Max f2: {max(f2_norms, key= lambda x: x[0])}")
 
     # Close the TCP connection
     mng.kill()
@@ -101,16 +115,21 @@ def main():
     obstacle_history = np.array(obstacle_history)
     print(f"obstacle history shape = {obstacle_history.shape}")
 
+
+    collision_detector(x_history, obstacle_history)
+
     # ---- Plot Results ----
 
     # Plot car state variables over time
     fig1, ax1 = plt.subplots()
-    ax1.plot(np.arange(0, T * DT, DT), x_history[:, 2:], label=["Theta", "V", "Phi", "A"])
+    ax1.plot(np.arange(0, T * DT, DT), x_history[:, 2:], label=["Theta", "V", "Phi"])
     ax1.set_title("State Variables Over Time")
     ax1.set_xlabel("Time (s)")
     ax1.set_ylabel("State Values")
-    ax1.legend(["Theta (Heading)", "Velocity (V)", "Steering Angle (Phi)", "Acceleration (A)"])
+    ax1.legend(["Theta (Heading)", "Velocity (V)", "Steering Angle (Phi)"])
     print(f"max state variables: {np.max(x_history, 0)}")
+
+    
 
     # Plot car trajectory
     fig2, ax2 = plt.subplots()
@@ -130,7 +149,7 @@ def main():
     ax4.plot(np.arange(0, T * DT, DT), x_history[:, 1], label="Car Y Position", linestyle="-", color="green")
     
     # plot obstacle 2 position
-    obs = 0
+    obs = 1
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 0], label="Obs X Position", linestyle="-", color="red")
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 1], label="Obs Y Position", linestyle="-", color="orange")
     ax4.set_title("Car Positions Over Time")
@@ -138,6 +157,13 @@ def main():
     ax4.set_ylabel("Position (m)")
     ax4.legend()
 
+    # Plot car state variables over time
+    fig5, ax5 = plt.subplots()
+    ax5.plot(np.arange(0, T * DT, DT), u_history[:, :], label=["u[0]", "u[1]"])
+    ax5.set_title("State Variables Over Time")
+    ax5.set_xlabel("Time (s)")
+    ax5.set_ylabel("State Values")
+    ax5.legend(["u[0]", "Acceleration"])
     # Show all plots
     plt.show()
 
