@@ -6,7 +6,7 @@ from constants import *
 
 # cost parameters
 # [x-pos, y-pos, psi, v, angular velocity]
-Q = cs.diag(cs.SX([10., 10., 10., 0.05, 20.]))
+Q = cs.diag(cs.SX([10., 10., 10., 0.025, 20.]))
 R = cs.diag(cs.SX([10., 10.])) #steering_angle, acceleration
 
 # Obstacle parameters
