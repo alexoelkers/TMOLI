@@ -174,7 +174,7 @@ if __name__ == "__main__":
     x0 = np.array([0, 0, 0, 0, 0])
 
     # define turn parameters
-    y0, x_goal, v_goal, turn_r = 0, 100, 6, 15
+    y0, x_goal, v_goal, turn_r = Y0, XG, VG, K
     turn_params = (y0, x_goal, v_goal, turn_r)
     x_history, u_history, obstacle_history, collision_status, overlap = main(x0, turn_params)
     plot_results(x_history, u_history, obstacle_history, 0)
