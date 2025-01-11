@@ -49,7 +49,7 @@ def collision_detector(x_history, obstacles_history):
 
 
 
-def main():
+def main(x0, turn_params):
     """The primary control loop for simulating the car's motion through state space
 
     Parameters:
@@ -66,20 +66,20 @@ def main():
     mng.ping()
 
     # Initial car state: x, y, theta, velocity (v), steering angle (phi)
-    x = np.array([0, 0, 0, 0, 0])
+    x = x0
 
     u_history = []  # Store control inputs over time
     x_history = []  # Store state trajectories over time
-    obstacle_history = []
+    obstacle_history = []   # store obstacle positions over time
     for i in range(OBS_N):
         obstacle_history.append([])
 
-    start = time.process_time()
+    # start = time.process_time()
     f2_norms = []
 
     for t in np.arange(0, T * DT, DT):
         # Generate the goal trajectory
-        goal = sp.generate_guide_trajectory(x)
+        goal = sp.generate_guide_trajectory(x, *turn_params)
         obstacles = obs_gen.get_obstacle_list(t)
         for i in range(OBS_N):
             obstacle_history[i].append((obstacles[2*i:2*(i+1)]))
@@ -105,9 +105,9 @@ def main():
 
         x = car_ode(x, u)   # update car state    
 
-    stop = time.process_time()
-    print(f"Solved in {round(stop - start, 2)} s")
-    print(f"Max f2: {max(f2_norms, key= lambda x: x[0])}")
+    # stop = time.process_time()
+    # print(f"Solved in {round(stop - start, 2)} s")
+    # print(f"Max f2: {max(f2_norms, key= lambda x: x[0])}")
 
     # Close the TCP connection
     mng.kill()
@@ -170,5 +170,11 @@ def plot_results(x_history, u_history, obstacle_history, obs):
 
 
 if __name__ == "__main__":
-    x_history, u_history, obstacle_history, collision_status, overlap = main()
+    # define vehicle initial state
+    x0 = np.array([0, 0, 0, 0, 0])
+
+    # define turn parameters
+    y0, x_goal, v_goal, turn_r = 0, 100, 6, 15
+    turn_params = (y0, x_goal, v_goal, turn_r)
+    x_history, u_history, obstacle_history, collision_status, overlap = main(x0, turn_params)
     plot_results(x_history, u_history, obstacle_history, 0)
