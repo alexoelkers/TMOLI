@@ -3,6 +3,7 @@ import casadi.casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+from SolverError import SolverError
 
 from constants import *
 import splinterp as sp
@@ -72,7 +73,7 @@ def simulate(mng, init_x, obstacle_def):
                 print(solution.get().num_outer_iterations)
         else:
             err = solution.get()
-            raise ValueError(f"time {t}: {err.message}")
+            raise SolverError(f"time {t}: {err.message}")
 
         # Update the car's state and append history
         x_history.append(x)
