@@ -22,7 +22,7 @@ Y0 = 0  # starting y coordinate
 
 #obstacle parameters
 OBS_Y = Y0  + 1.1 * L
-OBS_N = 10 #Changing this value requires recreating the solver
+OBS_N = 1 #Changing this value requires recreating the solver
 
 INFRONT_DISTANCE = 15 #Changing this value requires recreating the solver
 INFRONT_MAXCOST = 5 #Changing this value requires recreating the solver
