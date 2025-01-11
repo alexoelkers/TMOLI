@@ -46,7 +46,7 @@ def collision_detector(x_history, obstacles_history):
             if distance < 1:
                 return True, 1 - distance
                 # print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
-
+    return False, 0
 
 # Função para limpar todos os arquivos em um diretório
 def clear_directory(directory):
@@ -149,3 +149,23 @@ if __name__ == "__main__":
     y0, x_goal, v_goal, turn_r = Y0, XG, VG, K
     turn_params = (y0, x_goal, v_goal, turn_r)
     x_history, u_history, obstacle_history, collision_status, overlap = main(x0, turn_params)
+    with open('robot_data.csv', mode='w', newline='') as arquivo:
+        writer = csv.writer(arquivo)
+        writer.writerows(x_history)
+
+    output_dir = "obstaculos_posicoes"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Salva as posições de cada obstáculo em ficheiros CSV diferentes
+    for i, obstaculo in enumerate(obstacle_history):
+        filename = os.path.join(output_dir, f"obstaculo_{i + 1}.csv")
+    
+    # Abre o ficheiro CSV para escrita
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+        
+            # Escreve as posições em cada instante
+            for pos in obstaculo:
+                writer.writerow(pos)
+
+

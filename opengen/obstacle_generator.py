@@ -40,7 +40,7 @@ def _get_obstacle_locations(time):
 
     if len_obstacles < OBS_N:
         for i in range(OBS_N - len_obstacles):
-            obstacle_list.append(-10 - 25*i, 0, 0, 0)
+            obstacle_list.append([-10 - 25*i, 0, 0, 0])
 
     locations = []
     for obstacle in obstacle_list:
