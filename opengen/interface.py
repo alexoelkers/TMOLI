@@ -44,41 +44,19 @@ def collision_detector(x_history, obstacles_history):
             if distance < 1:
                 print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
 
-
-
-
-def main():
-    """The primary control loop for simulating the car's motion through state space
-
-    Parameters:
-    -----------
-    None
-
-    Returns:
-    --------
-    None
-    """
-    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12354)
-
-    mng.start()
-    mng.ping()
-
-    # Initial car state: x, y, theta, velocity (v), steering angle (phi)
-    x = np.array([0, 0, 0, 0, 0])
-
-    u_history = []  # Store control inputs over time
-    x_history = []  # Store state trajectories over time
+def simulate(mng, init_x, obstacle_def):
     obstacle_history = []
     for i in range(OBS_N):
         obstacle_history.append([])
 
-    start = time.process_time()
-    f2_norms = []
+    u_history = []  # Store control inputs over time
+    x_history = []  # Store state trajectories over time
+    x = init_x
 
     for t in np.arange(0, T * DT, DT):
-        # Generate the goal trajectory
         goal = sp.generate_guide_trajectory(x)
-        obstacles = obs_gen.get_obstacle_list(t)
+        obstacles = obs_gen.get_obstacle_list(t, obstacle_def)
+
         for i in range(OBS_N):
             obstacle_history[i].append((obstacles[2*i:2*(i+1)]))
 
@@ -87,7 +65,6 @@ def main():
         if solution.is_ok():
             u = solution.get().solution[:NU]
             status = solution.get().exit_status
-            f2_norms.append((solution.get().f2_norm, t))
             if status != "Converged":
                 print(f"f2: {solution.get().f2_norm}")
                 print(f"Warning! {solution.get().exit_status} at {round(t, 2)} s")
@@ -101,11 +78,43 @@ def main():
         x_history.append(x)
         u_history.append(u)
 
-        x = car_ode(x, u)   # update car state    
+        x = car_ode(x, u)   # update car state 
+
+    x_history = np.array(x_history)
+    u_history = np.array(u_history)
+    obstacle_history = np.array(obstacle_history)
+
+    return x_history, u_history, obstacle_history
+
+def get_obstacle_definition():
+        return [(19.,0,0,-0)]
+
+def main():
+    """The primary control loop for simulating the car's motion through state space
+
+    Parameters:
+    -----------
+    None
+
+    Returns:
+    --------
+    None
+    """
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12345)
+
+    mng.start()
+    mng.ping()
+
+    # Initial car state: x, y, theta, velocity (v), steering angle (phi)
+    x = np.array([0, 0, 0, 0, 0])
+
+
+    start = time.process_time()
+
+    x_history, u_history, obstacle_history = simulate(mng, x, get_obstacle_definition())  
 
     stop = time.process_time()
     print(f"Solved in {round(stop - start, 2)} s")
-    print(f"Max f2: {max(f2_norms, key= lambda x: x[0])}")
 
     # Close the TCP connection
     mng.kill()
