@@ -3,6 +3,8 @@ import casadi.casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+import csv
+import os
 
 from constants import *
 import splinterp as sp
@@ -125,7 +127,8 @@ def main():
     ax4.plot(np.arange(0, T * DT, DT), x_history[:, 1], label="Car Y Position", linestyle="-", color="green")
     
     # plot obstacle 2 position
-    obs = 0
+    obs = 1
+    print(obstacle_history[obs, :, :])
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 0], label="Obs X Position", linestyle="-", color="red")
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 1], label="Obs Y Position", linestyle="-", color="orange")
     ax4.set_title("Car Positions Over Time")
@@ -135,6 +138,30 @@ def main():
 
     # Show all plots
     plt.show()
+
+    with open('robot_data.csv', mode='w', newline='') as arquivo:
+        writer = csv.writer(arquivo)
+        writer.writerows(x_history)
+
+    output_dir = "obstaculos_posicoes"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Salva as posições de cada obstáculo em ficheiros CSV diferentes
+    for i, obstaculo in enumerate(obstacle_history):
+        filename = os.path.join(output_dir, f"obstaculo_{i + 1}.csv")
+    
+    # Abre o ficheiro CSV para escrita
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+        
+            # Escreve as colunas de cabeçalho
+            #writer.writerow(["Posição X", "Posição Y"])
+        
+            # Escreve as posições em cada instante
+            for pos in obstaculo:
+                writer.writerow(pos)
+
+#print(f"Ficheiros CSV foram salvos na pasta '{output_dir}'.")
 
 
 if __name__ == "__main__":
