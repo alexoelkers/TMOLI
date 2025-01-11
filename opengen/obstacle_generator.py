@@ -4,7 +4,7 @@ import random
 obstacles_parameters = {
     "num_moving": 0,
     "distance_between_moving": 3,
-    "num_static": 1,
+    "num_static": 0,
     "distance_between_static": 20,
     "v_mu": -2,
     "v_sigma": 0.5,
@@ -39,7 +39,8 @@ def _get_obstacle_locations(time):
     len_obstacles = len(obstacle_list)
 
     if len_obstacles < OBS_N:
-        obstacle_list += [(-10 - 25*i, 0, 0, 0) for i in range(OBS_N - len_obstacles)]
+        for i in range(OBS_N - len_obstacles):
+            obstacle_list.append(-10 - 25*i, 0, 0, 0)
 
     locations = []
     for obstacle in obstacle_list:

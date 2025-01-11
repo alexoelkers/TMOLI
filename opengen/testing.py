@@ -52,7 +52,9 @@ def plot_results(x_history, u_history, obstacle_history, obs):
     plt.show()
 
 if __name__ == "__main__":
-    compile_solver()
+    user_input = input("Recompile solver? [y/N]")
+    if user_input == "Y" or user_input == "y":
+        compile_solver()
     # define vehicle initial state
     x0 = np.array([0, 0, 0, 0, 0])
 
