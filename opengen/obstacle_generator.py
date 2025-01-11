@@ -2,7 +2,7 @@ from constants import *
 
 #(spawn x, spawn y, spawn time, x-velocity)
 def get_obstacle_definition():
-    return [(96, 1.93, 18.7, -2)]
+    return [(135.4, 1.93, 0, -2)]
 
 def _get_obstacle_locations(time):
     obstacle_list = get_obstacle_definition()
