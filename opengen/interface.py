@@ -50,6 +50,8 @@ def collision_detector(x_history, obstacles_history):
             if distance < 1:
                 collisions.append((obstacle, obstacles_history[obstacle, step, 0], obstacles_history[obstacle, step, 1], 1 - distance))
 
+    return collisions
+
 def simulate(mng, init_x, obstacle_def):
     obstacle_history = []
     for i in range(OBS_N):
@@ -117,7 +119,7 @@ def main():
 
     start = time.process_time()
 
-    x_history, u_history, obstacle_history = simulate(mng, x, get_obstacle_definition())  
+    x_history, u_history, obstacle_history = simulate(mng, x, [])  
 
     stop = time.process_time()
     print(f"Solved in {round(stop - start, 2)} s")
@@ -132,7 +134,11 @@ def main():
     print(f"obstacle history shape = {obstacle_history.shape}")
 
 
-    collision_detector(x_history, obstacle_history)
+    collisions = collision_detector(x_history, obstacle_history)
+    if collisions != []:
+        print("Collisions (obstacle, x, y, time)")
+        print(collisions)
+    
 
     # ---- Plot Results ----
 
