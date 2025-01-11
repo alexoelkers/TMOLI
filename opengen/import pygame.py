@@ -18,15 +18,21 @@ clock = pygame.time.Clock()
 robot_image = pygame.image.load("robot.png")
 obstacle_static_image = pygame.image.load("armazem.png")
 road_image = pygame.image.load("road.png")
+road_image2 = road_image
 obstacle_dynamic_image = pygame.image.load("Car.png")
 
+cars_length=10
+cars_width=10
+
 # Redimensionar imagens para um tamanho padrão
-robot_image = pygame.transform.scale(robot_image, (10, 10))
-obstacle_static_image = pygame.transform.scale(obstacle_static_image, (25, 25))
-road_image = pygame.transform.scale(road_image, (150, HEIGHT))
-obstacle_dynamic_image = pygame.transform.scale(obstacle_dynamic_image, (10, 10))
+robot_image = pygame.transform.scale(robot_image, (cars_width, cars_length))
+obstacle_static_image = pygame.transform.scale(obstacle_static_image, (cars_length*3, cars_length*3))
+road_image = pygame.transform.scale(road_image, (40, WIDTH))
+road_image = pygame.transform.rotate(road_image, 90)
+obstacle_dynamic_image = pygame.transform.scale(obstacle_dynamic_image, (cars_width,cars_length))
 obstacle_dynamic_image = pygame.transform.rotate(obstacle_dynamic_image, 90)
 
+road_image2 = pygame.transform.scale(road_image2, (40, WIDTH))
 
 # Classe para desenhar o Robô
 class Robot:
@@ -35,8 +41,8 @@ class Robot:
         self.height = robot_image.get_height()
 
     def draw(self, surface, x, y, orientation):
-        rotated_image = pygame.transform.rotate(robot_image, -orientation-90)
-        surface.blit(rotated_image, (x - self.width // 2, y - self.height // 2))
+        rotated_image = pygame.transform.rotate(robot_image, orientation-90)
+        surface.blit(rotated_image, (x, y))
 
 
 # Classe para Obstáculos
@@ -48,7 +54,19 @@ class Obstacle:
         self.height = height
 
     def draw(self, surface):
-        surface.blit(obstacle_dynamic_image, (self.x - self.width // 2, self.y - self.height // 2))
+        surface.blit(obstacle_dynamic_image, (self.x , self.y))
+
+class SObstacle:
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+    def draw(self, surface):
+        surface.blit(obstacle_static_image, (self.x - self.width//2, self.y- self.height//2))
+
+
 
 
 # Classe para desenhar a Estrada
@@ -58,7 +76,15 @@ class Road:
         self.x_position = x_position
 
     def draw(self, surface):
-        surface.blit(road_image, (self.x_position, self.y_position))
+        surface.blit(road_image, (self.x_position, self.y_position-cars_width//2))
+
+class Road2:
+    def __init__(self, x_position, y_position):
+        self.y_position = y_position
+        self.x_position = x_position
+
+    def draw(self, surface):
+        surface.blit(road_image2, (self.x_position-30, self.y_position))
 
 
 # Carregar a simulação de um arquivo CSV (dados do robô)
@@ -70,11 +96,11 @@ def load_simulation(file_path):
         for row in reader:
             robot_state = {
                 "x": float(row[0])*10+50,  # x-pos
-                "y": float(row[1])*10+50,  # y-pos
+                "y": 500-float(row[1])*10-50,  # y-pos
                 "orientation": math.degrees(float(row[2])),  # psi
                 "velocity": float(row[3]),  # v
                 "steering_angle": math.degrees(float(row[4])),  # delta
-                "acceleration": float(row[5])  # a
+                #"acceleration": float(row[5])  # a
             }
             robot_states.append(robot_state)
 
@@ -118,7 +144,7 @@ def load_obstacles_from_csv(directory_path):
 
             for row in reader:
                 # As posições estão nas duas primeiras colunas
-                x, y = float(row[0])*10+50, float(row[1])*10+50
+                x, y = float(row[0])*10+50,500- float(row[1])*10-50
                 obstacle_positions.append([x, y])
 
         obstacles_per_frame.append(obstacle_positions)
@@ -133,12 +159,27 @@ print(obstacle_positions)
 
 # Inicializar classes de desenho
 robot = Robot()
-road = Road(WIDTH // 2 - 75, 0)  # Centralizar a estrada
+#road = Road(0,500-75)  # Centralizar a estrada
+
 
 # Carregar os dados da simulação
 robot_file = "robot_data.csv"  # Substituir pelo caminho correto
 robot_states = load_simulation(robot_file)
+robot_state = robot_states[len(robot_states)-1]
+road2= Road2(robot_state["x"],robot_state["y"])
 
+
+n_roads=[]
+for nobs in obstacle_positions:
+            y=nobs[len(nobs)-1][1]
+            print(y)
+            if y not in n_roads:
+                n_roads+=[y]
+ 
+print(n_roads)
+
+#road = Road(0,500-75)  # Centralizar a estrada
+goal=SObstacle(robot_state["x"], robot_state["y"],26,26)
 # Carregar os obstáculos
 #obstacle_file = "obstacles_data.csv"  # Substituir pelo caminho correto
 #obstacle_positions = load_obstacles(obstacle_file)
@@ -155,7 +196,15 @@ while running:
             running = False
 
     # Desenhar a estrada
-    road.draw(screen)
+    
+    road2.draw(screen)
+    i=0
+    while i<len(n_roads):
+        road = Road(0,n_roads[i])
+        road.draw(screen)
+        i+=1
+    #road.draw(screen)
+    goal.draw(screen)
 
     # Obter o estado atual do robô e obstáculos
     if frame_index < len(robot_states):
@@ -176,13 +225,13 @@ while running:
 
         # Exibir outras informações (opcional)
         font = pygame.font.SysFont(None, 24)
-        info_text = f"Velocity: {robot_state['velocity']:.2f} | Delta: {robot_state['steering_angle']:.2f} | Acceleration: {robot_state['acceleration']:.2f}"
+        info_text = f"Velocity: {robot_state['velocity']:.2f} | Delta: {robot_state['steering_angle']:.2f}"#| Acceleration: {robot_state['acceleration']:.2f}"
         info_surface = font.render(info_text, True, (0, 0, 0))
         screen.blit(info_surface, (10, 10))
 
         # Avançar para o próximo frame
         frame_index += 1
-        print(frame_index)
+        #33print(frame_index)
     else:
         running = False  # Encerrar o loop quando a simulação terminar
 

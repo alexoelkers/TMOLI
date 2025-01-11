@@ -47,6 +47,23 @@ def collision_detector(x_history, obstacles_history):
                 print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
 
 
+# Função para limpar todos os arquivos em um diretório
+def clear_directory(directory):
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        try:
+            if os.path.isfile(file_path):  # Verifica se é um arquivo
+                os.unlink(file_path)  # Remove o arquivo
+        except Exception as e:
+            print(f"Erro ao remover o arquivo {file_path}: {e}")
+
+# Diretório de saída
+output_dir = "obstaculos_posicoes"
+
+# Limpa o diretório antes de salvar os novos arquivos
+clear_directory(output_dir)
+
+
 
 
 def main():
@@ -152,8 +169,8 @@ def main():
     ax4.plot(np.arange(0, T * DT, DT), x_history[:, 1], label="Car Y Position", linestyle="-", color="green")
     
     # plot obstacle 2 position
-    obs = 1
-    print(obstacle_history[obs, :, :])
+    obs = 0
+    #print(obstacle_history[obs, :, :])
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 0], label="Obs X Position", linestyle="-", color="red")
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 1], label="Obs Y Position", linestyle="-", color="orange")
     ax4.set_title("Car Positions Over Time")
