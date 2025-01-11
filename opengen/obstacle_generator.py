@@ -1,11 +1,37 @@
 from constants import *
+import random
+
+obstacles_parameters = {
+    "num_moving": 3,
+    "distance_between_moving": 3,
+    "num_staic": 2,
+    "distance_between_static": 20,
+    "v_mu": -2,
+    "v_sigma": 0.5,
+    "arrival_x": 90,
+    "arrival_time": 19,
+    "moving_y": 1.5
+}
+
+def every_other(i):
+    return 1 if i % 2 else -1
 
 #(spawn x, spawn y, spawn time, x-velocity)
-def get_obstacle_definition():
-    return [(135.4, 1.93, 0, -2)]
+def create_obstacle_list(p):
+    obstacles = []
+    for i in range(obstacles_parameters["num_static"]):
+        obstacles.append((10 + p["distance_between_static"]*i, 0, 0, 0))
+
+    for i in range(obstacles_parameters["num_moving"]):
+        reference_x = p["arrival_x"] - p["arrival_time"] * p["v_mu"]
+        this_x = reference_x + every_other(i) * p["distance_between_moving"]
+        this_v = random.normalvariate(p["v_mu"], p["v_sigma"])
+        obstacles.append((this_x, p["moving_y"], 0, this_v))
+
+    return obstacles
 
 def _get_obstacle_locations(time):
-    obstacle_list = get_obstacle_definition()
+    obstacle_list = create_obstacle_list(obstacles_parameters)
     len_obstacles = len(obstacle_list)
 
     if len_obstacles < OBS_N:
