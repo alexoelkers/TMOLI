@@ -42,8 +42,10 @@ def collision_detector(x_history, obstacles_history):
             distance = np.sqrt(x_delta**2 + y_delta**2)
 
             if distance < 1:
-                print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
+                return True, 1 - distance
+                # print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
 
+    return False, None
 
 
 
@@ -114,13 +116,13 @@ def main():
     x_history = np.array(x_history)
     u_history = np.array(u_history)
     obstacle_history = np.array(obstacle_history)
-    print(f"obstacle history shape = {obstacle_history.shape}")
 
+    collision_status, overlap = collision_detector(x_history, obstacle_history)
 
-    collision_detector(x_history, obstacle_history)
+    return x_history, u_history, obstacle_history, collision_status, overlap
 
-    # ---- Plot Results ----
-
+    
+def plot_results(x_history, u_history, obstacle_history, obs):
     # Plot car state variables over time
     fig1, ax1 = plt.subplots()
     ax1.plot(np.arange(0, T * DT, DT), x_history[:, 2:], label=["Theta", "V", "Phi"])
@@ -130,7 +132,6 @@ def main():
     ax1.legend(["Theta (Heading)", "Velocity (V)", "Steering Angle (Phi)"])
     print(f"max state variables: {np.max(x_history, 0)}")
 
-    
 
     # Plot car trajectory
     fig2, ax2 = plt.subplots()
@@ -150,7 +151,6 @@ def main():
     ax4.plot(np.arange(0, T * DT, DT), x_history[:, 1], label="Car Y Position", linestyle="-", color="green")
     
     # plot obstacle 2 position
-    obs = 0
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 0], label="Obs X Position", linestyle="-", color="red")
     ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 1], label="Obs Y Position", linestyle="-", color="orange")
     ax4.set_title("Car Positions Over Time")
@@ -170,4 +170,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    x_history, u_history, obstacle_history, collision_status, overlap = main()
+    plot_results(x_history, u_history, obstacle_history, 0)
