@@ -2,9 +2,9 @@ from constants import *
 import random
 
 obstacles_parameters = {
-    "num_moving": 3,
+    "num_moving": 0,
     "distance_between_moving": 3,
-    "num_staic": 2,
+    "num_static": 1,
     "distance_between_static": 20,
     "v_mu": -2,
     "v_sigma": 0.5,
@@ -18,9 +18,13 @@ def every_other(i):
 
 #(spawn x, spawn y, spawn time, x-velocity)
 def create_obstacle_list(p):
+    num_param_obs = p["num_moving"] + p["num_static"]
+    if num_param_obs > OBS_N:
+        raise ValueError("Number of obstacles in obstacles_parameter is larger than solver OBS_N")
+
     obstacles = []
     for i in range(obstacles_parameters["num_static"]):
-        obstacles.append((10 + p["distance_between_static"]*i, 0, 0, 0))
+        obstacles.append((30 + p["distance_between_static"]*i, 0, 0, 0))
 
     for i in range(obstacles_parameters["num_moving"]):
         reference_x = p["arrival_x"] - p["arrival_time"] * p["v_mu"]
