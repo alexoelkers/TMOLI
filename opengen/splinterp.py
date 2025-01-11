@@ -18,13 +18,12 @@ def next_guide_point(guide_state):
     --------
     next_guide_state (ndarray): the next state of the guide trajectory x[k+1]
     """
-    x, y, psi, v, delta, a = guide_state
+    x, y, psi, v, delta = guide_state
     if x < XG - K:  # before turn
         next_state = [x + VG * DT,
                       Y0, 
                       0,
                       VG,
-                      0,
                       0,]
     elif x >= XG - K and y < Y0 + K:    # during turn
         #theta = np.atan((x + K - XG)/(y - Y0))
@@ -35,14 +34,12 @@ def next_guide_point(guide_state):
                       Y0 + K*(1 - np.cos(next_theta)),
                       next_theta,
                       VG, 
-                      np.asin(1 / K),
-                      0]
+                      np.asin(1 / K)]
     elif y >= Y0 + K:   # after turn
         next_state = [XG,
                       y + VG * DT,
                       np.pi / 2,
                       VG,
-                      0,
                       0]
     return np.array(next_state)
 
@@ -64,7 +61,6 @@ if __name__ == "__main__":
              Y0, 
              0, 
              VG, 
-             0,
              0]
     
     trajectory = np.array(generate_guide_trajectory(state))
