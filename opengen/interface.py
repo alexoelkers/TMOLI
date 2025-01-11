@@ -44,7 +44,8 @@ def collision_detector(x_history, obstacles_history):
             distance = np.sqrt(x_delta**2 + y_delta**2)
 
             if distance < 1:
-                print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
+                return True, 1 - distance
+                # print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
 
 
 # Função para limpar todos os arquivos em um diretório
@@ -66,7 +67,7 @@ clear_directory(output_dir)
 
 
 
-def main():
+def main(x0, turn_params):
     """The primary control loop for simulating the car's motion through state space
 
     Parameters:
@@ -83,20 +84,20 @@ def main():
     mng.ping()
 
     # Initial car state: x, y, theta, velocity (v), steering angle (phi)
-    x = np.array([0, 0, 0, 0, 0])
+    x = x0
 
     u_history = []  # Store control inputs over time
     x_history = []  # Store state trajectories over time
-    obstacle_history = []
+    obstacle_history = []   # store obstacle positions over time
     for i in range(OBS_N):
         obstacle_history.append([])
 
-    start = time.process_time()
+    # start = time.process_time()
     f2_norms = []
 
     for t in np.arange(0, T * DT, DT):
         # Generate the goal trajectory
-        goal = sp.generate_guide_trajectory(x)
+        goal = sp.generate_guide_trajectory(x, *turn_params)
         obstacles = obs_gen.get_obstacle_list(t)
         for i in range(OBS_N):
             obstacle_history[i].append((obstacles[2*i:2*(i+1)]))
@@ -122,9 +123,9 @@ def main():
 
         x = car_ode(x, u)   # update car state    
 
-    stop = time.process_time()
-    print(f"Solved in {round(stop - start, 2)} s")
-    print(f"Max f2: {max(f2_norms, key= lambda x: x[0])}")
+    # stop = time.process_time()
+    # print(f"Solved in {round(stop - start, 2)} s")
+    # print(f"Max f2: {max(f2_norms, key= lambda x: x[0])}")
 
     # Close the TCP connection
     mng.kill()
@@ -133,85 +134,18 @@ def main():
     x_history = np.array(x_history)
     u_history = np.array(u_history)
     obstacle_history = np.array(obstacle_history)
-    print(f"obstacle history shape = {obstacle_history.shape}")
+
+    collision_status, overlap = collision_detector(x_history, obstacle_history)
 
 
-    collision_detector(x_history, obstacle_history)
-
-    # ---- Plot Results ----
-
-    # Plot car state variables over time
-    fig1, ax1 = plt.subplots()
-    ax1.plot(np.arange(0, T * DT, DT), x_history[:, 2:], label=["Theta", "V", "Phi"])
-    ax1.set_title("State Variables Over Time")
-    ax1.set_xlabel("Time (s)")
-    ax1.set_ylabel("State Values")
-    ax1.legend(["Theta (Heading)", "Velocity (V)", "Steering Angle (Phi)"])
-    print(f"max state variables: {np.max(x_history, 0)}")
-
-    
-
-    # Plot car trajectory
-    fig2, ax2 = plt.subplots()
-    ax2.plot(x_history[:, 0], x_history[:, 1], label="Car Trajectory")
-    ax2.set(aspect="equal")
-    ax2.set_title("Car trajectory")
-    ax2.legend()
-
-    # Plot lateral acceleration
-    fig3, ax3 = plt.subplots()
-    ax3.plot(np.arange(0, T * DT, DT), np.tan(x_history[:, 4]) * x_history[:, 3] ** 2 / L)
-    ax3.set_title("Lateral Acceleration")
-
-    # Plot obstacle and car positions over time
-    fig4, ax4 = plt.subplots()
-    ax4.plot(np.arange(0, T * DT, DT), x_history[:, 0], label="Car X Position", linestyle="-", color="blue")
-    ax4.plot(np.arange(0, T * DT, DT), x_history[:, 1], label="Car Y Position", linestyle="-", color="green")
-    
-    # plot obstacle 2 position
-    obs = 0
-    #print(obstacle_history[obs, :, :])
-    ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 0], label="Obs X Position", linestyle="-", color="red")
-    ax4.plot(np.arange(0, T * DT, DT), obstacle_history[obs, :, 1], label="Obs Y Position", linestyle="-", color="orange")
-    ax4.set_title("Car Positions Over Time")
-    ax4.set_xlabel("Time (s)")
-    ax4.set_ylabel("Position (m)")
-    ax4.legend()
-
-    # Plot car state variables over time
-    fig5, ax5 = plt.subplots()
-    ax5.plot(np.arange(0, T * DT, DT), u_history[:, :], label=["u[0]", "u[1]"])
-    ax5.set_title("State Variables Over Time")
-    ax5.set_xlabel("Time (s)")
-    ax5.set_ylabel("State Values")
-    ax5.legend(["u[0]", "Acceleration"])
-    # Show all plots
-    plt.show()
-
-    with open('robot_data.csv', mode='w', newline='') as arquivo:
-        writer = csv.writer(arquivo)
-        writer.writerows(x_history)
-
-    output_dir = "obstaculos_posicoes"
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Salva as posições de cada obstáculo em ficheiros CSV diferentes
-    for i, obstaculo in enumerate(obstacle_history):
-        filename = os.path.join(output_dir, f"obstaculo_{i + 1}.csv")
-    
-    # Abre o ficheiro CSV para escrita
-        with open(filename, mode='w', newline='') as file:
-            writer = csv.writer(file)
-        
-            # Escreve as colunas de cabeçalho
-            #writer.writerow(["Posição X", "Posição Y"])
-        
-            # Escreve as posições em cada instante
-            for pos in obstaculo:
-                writer.writerow(pos)
-
-#print(f"Ficheiros CSV foram salvos na pasta '{output_dir}'.")
+    return x_history, u_history, obstacle_history, collision_status, overlap
 
 
 if __name__ == "__main__":
-    main()
+    # define vehicle initial state
+    x0 = np.array([0, 0, 0, 0, 0])
+
+    # define turn parameters
+    y0, x_goal, v_goal, turn_r = Y0, XG, VG, K
+    turn_params = (y0, x_goal, v_goal, turn_r)
+    x_history, u_history, obstacle_history, collision_status, overlap = main(x0, turn_params)
