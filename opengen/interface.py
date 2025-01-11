@@ -3,8 +3,6 @@ import casadi.casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-import csv
-import os
 
 from constants import *
 import splinterp as sp
@@ -120,7 +118,6 @@ def main(x0, turn_params):
     obstacle_history = np.array(obstacle_history)
 
     collision_status, overlap = collision_detector(x_history, obstacle_history)
-
 
     return x_history, u_history, obstacle_history, collision_status, overlap
 

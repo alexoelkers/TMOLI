@@ -3,7 +3,7 @@ import casadi.casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
 
-from constants import *
+from utils import *
 import splinterp as sp
 
 
