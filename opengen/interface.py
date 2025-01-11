@@ -58,7 +58,7 @@ def main():
     --------
     None
     """
-    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12346)
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12354)
 
     mng.start()
     mng.ping()
