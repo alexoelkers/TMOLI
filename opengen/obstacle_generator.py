@@ -10,7 +10,7 @@ obstacles_parameters = {
     "v_sigma": 0.5,
     "arrival_x": 90,
     "arrival_time": 19,
-    "moving_y": 1.5
+    "moving_y": 3
 }
 
 def every_other(i):
@@ -20,7 +20,7 @@ def every_other(i):
 def create_obstacle_list(p):
     num_param_obs = p["num_moving"] + p["num_static"]
     if num_param_obs > OBS_N:
-        raise ValueError("Number of obstacles in obstacles_parameter is larger than solver OBS_N")
+        raise ValueError(f"Number of obstacles in obstacles_parameter is larger than solver OBS_N. Set OBS_N >= {num_param_obs}")
 
     obstacles = []
     for i in range(obstacles_parameters["num_static"]):
