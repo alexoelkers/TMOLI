@@ -36,6 +36,11 @@ def car_ode(x, u):
     return np.array([x, y, psi, v, delta])
 
 def collision_detector(x_history, obstacles_history):
+    """
+    Returns a list of all collisions in format
+    (obstacle, x, y, overlap)
+    """
+    collisions = []
     for step, t in enumerate(np.arange(0, T * DT, DT)):
         for obstacle in range(OBS_N):
             x_delta = x_history[step, 0] - obstacles_history[obstacle, step, 0]
@@ -43,7 +48,7 @@ def collision_detector(x_history, obstacles_history):
             distance = np.sqrt(x_delta**2 + y_delta**2)
 
             if distance < 1:
-                print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
+                collisions.append((obstacle, obstacles_history[obstacle, step, 0], obstacles_history[obstacle, step, 1], 1 - distance))
 
 def simulate(mng, init_x, obstacle_def):
     obstacle_history = []
