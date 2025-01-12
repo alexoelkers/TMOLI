@@ -35,7 +35,7 @@ def main():
     compile_solver()
 
     mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12345)
-
+    failed = 0
     mng.start()
     mng.ping()
 
@@ -54,16 +54,18 @@ def main():
             obstacle_history = np.array(obstacle_history)
             collisions = collision_detector(x_history, obstacle_history)
             #print(get_nearest_distance(x_history, obstacle_history)[3])
+            
             if collisions == []:
                  print(f"solver success for velocity = {velocity}")
             else:
+                 
                  print(f"Collision at v={velocity}: {collisions}")
 
-            
         except SolverError:
+            failed += 1
             print(f"SolverError: solver failed to converge for velocity = {velocity}") 
         
-
+    print(f"failed: {failed}")
     # Close the TCP connection
     mng.kill()
 
