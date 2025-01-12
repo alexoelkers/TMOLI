@@ -8,9 +8,6 @@ from interface import simulate as simulate
 from interface import collision_detector
 from SolverError import SolverError
 
-#92.3 @ 23.1
-
-
 def get_obstacle_definition(velocity):
         return [(102.3, 2, 0, velocity)]
 
