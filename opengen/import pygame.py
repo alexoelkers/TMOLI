@@ -4,60 +4,53 @@ import csv
 import os
 import math
 
-
-# Inicializar o pygame
 pygame.init()
 
-# Configurações da janela
+#Screen configuration
 WIDTH, HEIGHT = 1100, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Visualizador de Simulação 2D")
 clock = pygame.time.Clock()
 
-# Carregar imagens (substituir pelos caminhos reais das imagens)
+# Load images
 robot_image = pygame.image.load("robot.png")
 obstacle_static_image = pygame.image.load("armazem.png")
 road_image = pygame.image.load("road.png")
 road_image2 = road_image
 obstacle_dynamic_image = pygame.image.load("Car.png")
 
+#Objects dimentions
 robot_length=10*2.6
 robot_width=10
-
 cars_length=10*2.2
 cars_width=10
-
-# Redimensionar imagens para um tamanho padrão
 robot_image = pygame.transform.scale(robot_image, (robot_width, robot_length))
 obstacle_static_image = pygame.transform.scale(obstacle_static_image, (cars_length*3, cars_length*3))
 road_image = pygame.transform.scale(road_image, (40, WIDTH))
 road_image = pygame.transform.rotate(road_image, 90)
 obstacle_dynamic_image = pygame.transform.scale(obstacle_dynamic_image, (cars_width,cars_length))
 obstacle_dynamic_image = pygame.transform.rotate(obstacle_dynamic_image, 90)
-
 road_image2 = pygame.transform.scale(road_image2, (40, WIDTH))
 
-# Classe para desenhar o Robô
+
 class Robot:
     def __init__(self):
         self.width = robot_image.get_width()
         self.height = robot_image.get_height()
 
     def draw(self, surface, x, y, orientation):
-        #rotated_image = pygame.transform.rotate(robot_image, orientation-90)
-        #surface.blit(rotated_image, (x-(robot_length//2), y+(robot_width//2)))
         rotated_image = pygame.transform.rotate(robot_image, orientation - 90)
 
-        # Obter as dimensões da imagem rotacionada
+        # Dimentions of the rotated image to calculate center
         rotated_width, rotated_height = rotated_image.get_width(), rotated_image.get_height()
 
-        # Ajustar as coordenadas para que o centro do robô seja o ponto correto
+        # Centring the robot position
         blit_position = (x - rotated_width // 2, y + rotated_height // 2)
-
-        # Desenhar a imagem na tela
         surface.blit(rotated_image, blit_position)
 
-# Classe para Obstáculos
+
+
+# Dynamic Obstacles
 class Obstacle:
     def __init__(self, x, y, width, height):
         self.x = x
@@ -68,6 +61,8 @@ class Obstacle:
     def draw(self, surface):
         surface.blit(obstacle_dynamic_image, (self.x-(cars_length//2), self.y+(cars_width//2)))
 
+
+#Goal drawing
 class SObstacle:
     def __init__(self, x, y, width, height):
         self.x = x
@@ -81,7 +76,7 @@ class SObstacle:
 
 
 
-# Classe para desenhar a Estrada
+# Horizontal Road
 class Road:
     def __init__(self, x_position, y_position):
         self.y_position = y_position
@@ -90,6 +85,7 @@ class Road:
     def draw(self, surface):
         surface.blit(road_image, (self.x_position, self.y_position+(cars_width//2)-5))
 
+#Vertical Road
 class Road2:
     def __init__(self, x_position, y_position):
         self.y_position = y_position
@@ -99,7 +95,7 @@ class Road2:
         surface.blit(road_image2, (self.x_position-25, self.y_position))
 
 
-# Carregar a simulação de um arquivo CSV (dados do robô)
+# Loads the robot data
 def load_simulation(file_path):
     robot_states = []
 
@@ -118,41 +114,21 @@ def load_simulation(file_path):
 
     return robot_states
 
-'''
-# Carregar obstáculos de um arquivo CSV
-def load_obstacles(file_path):
-    obstacles_per_frame = []
-
-    with open(file_path, "r") as f:
-        for line in f:
-            # Dividir a linha por espaços e converter os números para float
-            obstacle_positions = [list(map(float, obs.split())) for obs in line.strip().split('],[')]
-            obstacles_per_frame.append(obstacle_positions)
-
-    return obstacles_per_frame
-'''
 
 
-# Carregar obstáculos a partir de ficheiros CSV diferentes
+# Loads the positions of every obstacle
 def load_obstacles_from_csv(directory_path):
     obstacles_per_frame = []
-
-    # Listar todos os ficheiros CSV na pasta
     files = [f for f in os.listdir(directory_path) if f.endswith('.csv')]
-
-    # Ordenar os ficheiros (se necessário, baseado no nome ou outra lógica)
     files.sort()
 
-    # Carregar as posições de cada obstáculo
+    # Extract the positions from every file
     for file_name in files:
         file_path = os.path.join(directory_path, file_name)
-        
-        # Lista para armazenar as posições de um único obstáculo ao longo do tempo
         obstacle_positions = []
 
         with open(file_path, "r") as f:
             reader = csv.reader(f)
-            #next(reader)  # Pular a linha de cabeçalho
 
             for row in reader:
                 x, y = float(row[0])*30+50-2100,700- float(row[1])*20-100
@@ -162,42 +138,31 @@ def load_obstacles_from_csv(directory_path):
 
     return obstacles_per_frame
 
-# Exemplo de uso:
-directory_path = "obstaculos_posicoes"  # Pasta onde os ficheiros CSV foram salvos
+
+directory_path = "obstaculos_posicoes" 
 obstacle_positions = load_obstacles_from_csv(directory_path)
-#print(obstacle_positions)
 
-
-# Inicializar classes de desenho
 robot = Robot()
-#road = Road(0,500-75)  # Centralizar a estrada
 
-
-# Carregar os dados da simulação
 robot_file = "robot_data.csv"  # Substituir pelo caminho correto
 robot_states = load_simulation(robot_file)
+
 robot_state = robot_states[len(robot_states)-1]
-road2= Road2(robot_state["x"],robot_state["y"])
+road2= Road2(robot_state["x"],robot_state["y"]) # Place the vertical road
 
-
+# Looks at the positions of the obstacles to place the horizontal roads
 n_roads=[]
 for nobs in obstacle_positions:
             y=nobs[len(nobs)-1][1]
             if y not in n_roads:
                 n_roads+=[y]
- 
-print(n_roads)
 
-#road = Road(0,500-75)  # Centralizar a estrada
 goal=SObstacle(robot_state["x"], robot_state["y"],26,26)
-# Carregar os obstáculos
-#obstacle_file = "obstacles_data.csv"  # Substituir pelo caminho correto
-#obstacle_positions = load_obstacles(obstacle_file)
 
-# Loop principal de visualização
+
 
 clock = pygame.time.Clock()  # Já inicializado
-fps = 10  # 10 quadros por segundo (0.1 segundos por quadro)
+fps = 10  #set frames per secont
 frame=244
 print(robot_states[frame])
 print(obstacle_positions[0][frame])
@@ -206,14 +171,11 @@ running = True
 frame_index = 150
 while running:
     screen.fill((255, 255, 255))  # Fundo branco
-
-    # Eventos
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Desenhar a estrada
-    
+    # Draws the roads
     road2.draw(screen)
     i=0
     while i<len(n_roads)-1:
@@ -222,15 +184,11 @@ while running:
         i+=1
     goal.draw(screen)
 
-    # Obter o estado atual do robô e obstáculos
+    # Draw the robot and obstacles for each frame
     if frame_index < len(robot_states):
         robot_state = robot_states[frame_index]
-        #current_obstacles = obstacle_positions[frame_index]  # Posições dos obstáculos para o frame atual
-
-        # Desenhar o robô
-        #robot.draw(screen, robot_state["x"], robot_state["y"], robot_state["orientation"])
-
-        # Desenhar os obstáculos
+        
+        # Obstacles
         for nobs in obstacle_positions:
             #if nobs[frame_index][0]!=-10.0:
             obs = Obstacle(nobs[frame_index][0], nobs[frame_index][1], 50, 50)
@@ -239,22 +197,20 @@ while running:
 
         robot.draw(screen, robot_state["x"], robot_state["y"], robot_state["orientation"])
 
-        # Exibir outras informações (opcional)
+        # Shows informations
         font = pygame.font.SysFont(None, 24)
-        info_text = f"Velocity: {robot_state['velocity']:.2f} | Delta: {robot_state['steering_angle']:.2f}"#| Acceleration: {robot_state['acceleration']:.2f}"
+        info_text = f"Velocity: {robot_state['velocity']:.2f} | Delta: {robot_state['steering_angle']:.2f}"
         info_surface = font.render(info_text, True, (0, 0, 0))
         screen.blit(info_surface, (10, 10))
 
-        # Avançar para o próximo frame
         frame_index += 1
-        #33print(frame_index)
+
     else:
-        running = False  # Encerrar o loop quando a simulação terminar
-    clock.tick(fps)
-    # Atualizar a tela
+        running = False  
+    clock.tick(fps) # set the frames per second
+
     pygame.display.flip()
     clock.tick(30)
 
-# Sair do pygame
 pygame.quit()
 sys.exit()
