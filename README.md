@@ -16,3 +16,6 @@ To compile the solver, run the file `opengen/solver.py`. This will create the so
 To enable or disable the "in-front" penalty, uncomment lines 24 and 25 in `solver.py`
 
 To create animations, first run `interface.py` with the obstacles defined in the function `get_obstacle_definition()`. When this has finished, close all graphs (dont quit using Ctrl+C) and the run the file `import pygame.py` Note that the simulation only shows x > 70. 
+
+# Git repo
+https://github.com/alexoelkers/TMOLI
