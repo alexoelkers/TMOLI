@@ -49,6 +49,17 @@ def collision_detector(x_history, obstacles_history):
 
             if distance < 1:
                 collisions.append((obstacle, obstacles_history[obstacle, step, 0], obstacles_history[obstacle, step, 1], 1 - distance))
+                print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
+
+
+def clear_directory(directory):
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        try:
+            if os.path.isfile(file_path):  
+                os.unlink(file_path)  
+        except Exception as e:
+            print(f"Could not remove {file_path}: {e}")
 
     return collisions
 
@@ -188,6 +199,30 @@ def main():
     ax5.legend(["u[0]", "Acceleration"])
     # Show all plots
     plt.show()
+    
+    output_dir = "obstaculos_posicoes"
+
+    # Clears the files in the obstacle folder
+    clear_directory(output_dir)
+
+
+    # Saves the robot data in a csv
+    with open('robot_data.csv', mode='w', newline='') as arquivo:
+        writer = csv.writer(arquivo)
+        writer.writerows(x_history)
+
+    output_dir = "obstaculos_posicoes"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Saves the postions of each obstacles in differents csv
+    for i, obstaculo in enumerate(obstacle_history):
+        filename = os.path.join(output_dir, f"obstaculo_{i + 1}.csv")
+    
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            for pos in obstaculo:
+                writer.writerow(pos)
+
 
 
 if __name__ == "__main__":
