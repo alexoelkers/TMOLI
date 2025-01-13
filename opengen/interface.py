@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from SolverError import SolverError
+import os
+import csv
 
 from constants import *
 import splinterp as sp
@@ -50,18 +52,17 @@ def collision_detector(x_history, obstacles_history):
             if distance < 1:
                 collisions.append((obstacle, obstacles_history[obstacle, step, 0], obstacles_history[obstacle, step, 1], 1 - distance))
                 print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
-
+    return collisions
 
 def clear_directory(directory):
-    for filename in os.listdir(directory):
-        file_path = os.path.join(directory, filename)
-        try:
-            if os.path.isfile(file_path):  
-                os.unlink(file_path)  
-        except Exception as e:
-            print(f"Could not remove {file_path}: {e}")
-
-    return collisions
+    if os.path.isdir(directory):
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            try:
+                if os.path.isfile(file_path):  
+                    os.unlink(file_path)  
+            except Exception as e:
+                print(f"Could not remove {file_path}: {e}")
 
 def simulate(mng, init_x, obstacle_def):
     obstacle_history = []
@@ -106,7 +107,7 @@ def simulate(mng, init_x, obstacle_def):
     return x_history, u_history, obstacle_history
 
 def get_obstacle_definition():
-        return [(19.,0,0,-0)]
+        return [(30,0,0,0)]
 
 def main():
     """The primary control loop for simulating the car's motion through state space
@@ -130,7 +131,7 @@ def main():
 
     start = time.process_time()
 
-    x_history, u_history, obstacle_history = simulate(mng, x, [])  
+    x_history, u_history, obstacle_history = simulate(mng, x, get_obstacle_definition())  
 
     stop = time.process_time()
     print(f"Solved in {round(stop - start, 2)} s")
