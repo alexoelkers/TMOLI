@@ -1,18 +1,13 @@
 from constants import *
 
 #(spawn x, spawn y, spawn time, x-velocity)
-def get_obstacle_definition():
-    return [(134.,1.93,0,-2)]
 
-
-def _get_obstacle_locations(time):
-    obstacle_list = get_obstacle_definition()
+def _get_obstacle_locations(time, obstacle_list):
+    
     len_obstacles = len(obstacle_list)
-
     if len_obstacles < OBS_N:
         obstacle_list += [(1000, -400, 0, 0) for i in range(OBS_N - len_obstacles)]
         
-
     locations = []
     for obstacle in obstacle_list:
         if time >= obstacle[2]:
@@ -27,10 +22,10 @@ def _get_obstacle_locations(time):
 
     return locations
 
-def get_obstacle_list(time) -> list:
+def get_obstacle_list(time, obstacle_list) -> list:
     locations = []
     for i in range(N):
-        locations.extend(_get_obstacle_locations(time + DT*i))
+        locations.extend(_get_obstacle_locations(time + DT*i, obstacle_list))
 
     return locations
 

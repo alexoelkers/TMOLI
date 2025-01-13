@@ -3,6 +3,7 @@ import casadi.casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+from SolverError import SolverError
 
 from constants import *
 import splinterp as sp
@@ -35,6 +36,11 @@ def car_ode(x, u):
     return np.array([x, y, psi, v, delta])
 
 def collision_detector(x_history, obstacles_history):
+    """
+    Returns a list of all collisions in format
+    (obstacle, x, y, overlap)
+    """
+    collisions = []
     for step, t in enumerate(np.arange(0, T * DT, DT)):
         for obstacle in range(OBS_N):
             x_delta = x_history[step, 0] - obstacles_history[obstacle, step, 0]
@@ -42,6 +48,7 @@ def collision_detector(x_history, obstacles_history):
             distance = np.sqrt(x_delta**2 + y_delta**2)
 
             if distance < 1:
+                collisions.append((obstacle, obstacles_history[obstacle, step, 0], obstacles_history[obstacle, step, 1], 1 - distance))
                 print(f"Collision with obstacle {obstacle} at x={round(x_history[step, 0],1)} and y={round(x_history[step,1],1)}. Time={round(t, 2)}. Distance={round(1 - distance, 2)}")
 
 
@@ -52,14 +59,54 @@ def clear_directory(directory):
             if os.path.isfile(file_path):  
                 os.unlink(file_path)  
         except Exception as e:
-            print(f"Erro ao remover o arquivo {file_path}: {e}")
+            print(f"Could not remove {file_path}: {e}")
 
-output_dir = "obstaculos_posicoes"
+    return collisions
 
-# Clears the files in the obstacle folder
-clear_directory(output_dir)
+def simulate(mng, init_x, obstacle_def):
+    obstacle_history = []
+    for i in range(OBS_N):
+        obstacle_history.append([])
 
+    u_history = []  # Store control inputs over time
+    x_history = []  # Store state trajectories over time
+    x = init_x
 
+    for t in np.arange(0, T * DT, DT):
+        goal = sp.generate_guide_trajectory(x)
+        obstacles = obs_gen.get_obstacle_list(t, obstacle_def)
+
+        for i in range(OBS_N):
+            obstacle_history[i].append((obstacles[2*i:2*(i+1)]))
+
+        # Call the optimizer with current state and goal
+        solution = mng.call([*x, *goal, *obstacles], initial_guess=[0.0] * (NU * N))
+        if solution.is_ok():
+            u = solution.get().solution[:NU]
+            status = solution.get().exit_status
+            if status != "Converged":
+                print(f"f2: {solution.get().f2_norm}")
+                print(f"Warning! {solution.get().exit_status} at {round(t, 2)} s")
+                print(solution.get().num_inner_iterations)
+                print(solution.get().num_outer_iterations)
+        else:
+            err = solution.get()
+            raise SolverError(f"time {t}: {err.message}")
+
+        # Update the car's state and append history
+        x_history.append(x)
+        u_history.append(u)
+
+        x = car_ode(x, u)   # update car state 
+
+    x_history = np.array(x_history)
+    u_history = np.array(u_history)
+    obstacle_history = np.array(obstacle_history)
+
+    return x_history, u_history, obstacle_history
+
+def get_obstacle_definition():
+        return [(19.,0,0,-0)]
 
 def main():
     """The primary control loop for simulating the car's motion through state space
@@ -72,7 +119,7 @@ def main():
     --------
     None
     """
-    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12354)
+    mng = og.tcp.OptimizerTcpManager('my_optimizers/navigation_obstacle', port=12345)
 
     mng.start()
     mng.ping()
@@ -80,46 +127,13 @@ def main():
     # Initial car state: x, y, theta, velocity (v), steering angle (phi)
     x = np.array([0, 0, 0, 0, 0])
 
-    u_history = []  # Store control inputs over time
-    x_history = []  # Store state trajectories over time
-    obstacle_history = []
-    for i in range(OBS_N):
-        obstacle_history.append([])
 
     start = time.process_time()
-    f2_norms = []
 
-    for t in np.arange(0, T * DT, DT):
-        # Generate the goal trajectory
-        goal = sp.generate_guide_trajectory(x)
-        obstacles = obs_gen.get_obstacle_list(t)
-        for i in range(OBS_N):
-            obstacle_history[i].append((obstacles[2*i:2*(i+1)]))
-
-        # Call the optimizer with current state and goal
-        solution = mng.call([*x, *goal, *obstacles], initial_guess=[0.0] * (NU * N))
-        if solution.is_ok():
-            u = solution.get().solution[:NU]
-            status = solution.get().exit_status
-            f2_norms.append((solution.get().f2_norm, t))
-            if status != "Converged":
-                print(f"f2: {solution.get().f2_norm}")
-                print(f"Warning! {solution.get().exit_status} at {round(t, 2)} s")
-                print(solution.get().num_inner_iterations)
-                print(solution.get().num_outer_iterations)
-        else:
-            err = solution.get()
-            raise ValueError(f"time {t}: {err.message}")
-
-        # Update the car's state and append history
-        x_history.append(x)
-        u_history.append(u)
-
-        x = car_ode(x, u)   # update car state    
+    x_history, u_history, obstacle_history = simulate(mng, x, [])  
 
     stop = time.process_time()
     print(f"Solved in {round(stop - start, 2)} s")
-    print(f"Max f2: {max(f2_norms, key= lambda x: x[0])}")
 
     # Close the TCP connection
     mng.kill()
@@ -131,7 +145,11 @@ def main():
     print(f"obstacle history shape = {obstacle_history.shape}")
 
 
-    collision_detector(x_history, obstacle_history)
+    collisions = collision_detector(x_history, obstacle_history)
+    if collisions != []:
+        print("Collisions (obstacle, x, y, time)")
+        print(collisions)
+    
 
     # ---- Plot Results ----
 
@@ -181,6 +199,11 @@ def main():
     ax5.legend(["u[0]", "Acceleration"])
     # Show all plots
     plt.show()
+    
+    output_dir = "obstaculos_posicoes"
+
+    # Clears the files in the obstacle folder
+    clear_directory(output_dir)
 
 
     # Saves the robot data in a csv

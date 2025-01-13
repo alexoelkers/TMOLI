@@ -21,7 +21,7 @@ def calc_cost(state, reference, u_i, obstacles_unshaped):
     for i in range(OBS_N):
         obstacle_x = obstacles_unshaped[i + (i * 2 * OBS_N)]
         obstacle_y = obstacles_unshaped[1 + i + (i * 2 * OBS_N)]
-        infront_cost = INFRONT_MAXCOST * cs.fmax(0, INFRONT_DISTANCE - cs.fmax(obstacle_x - state[0],0))
+        # infront_cost = INFRONT_MAXCOST * cs.fmax(0, INFRONT_DISTANCE - cs.fmax(obstacle_x - state[0],0))
         # cost += cs.sign(cs.fmax(0, 2*obstacle_radius - cs.fabs(state[1] - obstacle_y))) * infront_cost
 
         #Repulsive field
