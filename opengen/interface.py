@@ -107,7 +107,8 @@ def simulate(mng, init_x, obstacle_def):
     return x_history, u_history, obstacle_history
 
 def get_obstacle_definition():
-        return [(30,0,0,0)]
+        return [(80,0,0,0),
+                (145, 2, 0, -2)]
 
 def main():
     """The primary control loop for simulating the car's motion through state space
@@ -201,7 +202,7 @@ def main():
     # Show all plots
     plt.show()
     
-    output_dir = "obstaculos_posicoes"
+    output_dir = "obstacle_positions"
 
     # Clears the files in the obstacle folder
     clear_directory(output_dir)
@@ -212,12 +213,12 @@ def main():
         writer = csv.writer(arquivo)
         writer.writerows(x_history)
 
-    output_dir = "obstaculos_posicoes"
+    output_dir = "obstacle_positions"
     os.makedirs(output_dir, exist_ok=True)
 
     # Saves the postions of each obstacles in differents csv
     for i, obstaculo in enumerate(obstacle_history):
-        filename = os.path.join(output_dir, f"obstaculo_{i + 1}.csv")
+        filename = os.path.join(output_dir, f"obstacle_{i + 1}.csv")
     
         with open(filename, mode='w', newline='') as file:
             writer = csv.writer(file)

@@ -9,7 +9,7 @@ pygame.init()
 #Screen configuration
 WIDTH, HEIGHT = 1100, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Visualizador de Simulação 2D")
+pygame.display.set_caption("2D simulation")
 clock = pygame.time.Clock()
 
 # Load images
@@ -139,12 +139,12 @@ def load_obstacles_from_csv(directory_path):
     return obstacles_per_frame
 
 
-directory_path = "obstaculos_posicoes" 
+directory_path = "obstacle_positions" 
 obstacle_positions = load_obstacles_from_csv(directory_path)
 
 robot = Robot()
 
-robot_file = "robot_data.csv"  # Substituir pelo caminho correto
+robot_file = "robot_data.csv"  # Replace with the correct path
 robot_states = load_simulation(robot_file)
 
 robot_state = robot_states[len(robot_states)-1]
