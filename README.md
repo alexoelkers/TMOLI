@@ -4,6 +4,7 @@ Group 42 Planning and Decision Making project repository.
 # Prerequisites
 We recommend that you run this project in a Python virtual environment
  - Python 3
+ - Rust
  - numpy
  - pygame
  - MatPlotLib
